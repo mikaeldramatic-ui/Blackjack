@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+    <!-- pressed state-->
+    <item android:state_pressed="true" android:drawable="@drawable/neon_glow_pressed"/>
+
+    <!-- default state-->
+    <item android:drawable="@drawable/neon_glow" />
+
+</selector>

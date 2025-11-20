@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Strong Neon-->
+
+    <item>
+
+        <shape android:shape="rectangle">
+            <solid android:color="#66FF00FF" /> <!--Stronger glow-->
+            <corners android:radius="26dp" />
+
+        </shape>
+    </item>
+
+    <!-- Main button -->
+    <item
+        android:left="2dp"
+        android:top="2dp"
+        android:right="2dp"
+        android:bottom="2dp">
+
+        <shape android:shape="rectangle">
+            <solid android:color="#99000000"/>
+            <corners android:radius="20dp"/>
+            <stroke android:width="4dp" android:color="#FF00FF"/> <!-- Thick Neon-->
+        </shape>
+    </item>
+
+</layer-list>
