@@ -7,6 +7,10 @@ android {
     namespace = "com.example.blackjack"
     compileSdk {
         version = release(36)
+
+        viewBinding {
+            enable = true
+        }
     }
 
     defaultConfig {
