@@ -12,6 +12,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BlackJack">
         <activity
+            android:name=".NewGameActivity"
+            android:exported="false" />
+        <activity
             android:name=".HighscoreActivity"
             android:exported="false" />
         <activity
