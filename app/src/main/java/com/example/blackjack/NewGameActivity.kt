@@ -20,6 +20,10 @@ class NewGameActivity : AppCompatActivity() {
         binding.btnSinglePlayer.setOnClickListener {
             //Opens single player
         }
+        //Back button
+        binding.btnBack.setOnClickListener {
+            finish()
+        }
 
        // binding.bntVsMode.setOnClickListener{
             //Opens Vs Mode

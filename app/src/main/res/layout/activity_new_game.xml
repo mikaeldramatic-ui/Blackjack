@@ -2,25 +2,36 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:background="@drawable/new_game"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/new_game"
     tools:context=".NewGameActivity">
 
+    <ImageButton
+        android:id="@+id/btnBack"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/neon_button_selector"
+        android:src="@drawable/ic_arrow_back"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="50dp"
+        android:layout_marginStart="20dp"
+        app:tint="#AAFF00FF" />
 
     <!-- Title -->
     <TextView
         android:id="@+id/newGameText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="80dp"
         android:text="New Game"
         android:textColor="@android:color/white"
         android:textSize="32sp"
         android:textStyle="bold"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="80dp" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 
     <!-- Single Player -->
@@ -28,14 +39,14 @@
         android:id="@+id/btnSinglePlayer"
         android:layout_width="250dp"
         android:layout_height="60dp"
-        android:text="Single Player"
-        android:textSize="20sp"
-        android:textColor="@android:color/white"
-        android:background="@drawable/neon_button_selector"
-        app:layout_constraintTop_toBottomOf="@id/newGameText"
         android:layout_marginTop="200dp"
+        android:background="@drawable/neon_button_selector"
+        android:text="Single Player"
+        android:textColor="@android:color/white"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/newGameText" />
 
 
     <!-- VS Mode -->
@@ -43,13 +54,13 @@
         android:id="@+id/btnVsMode"
         android:layout_width="250dp"
         android:layout_height="60dp"
-        android:text="VS Mode"
-        android:textSize="20sp"
-        android:textColor="@android:color/white"
-        android:background="@drawable/neon_button_selector"
-        app:layout_constraintTop_toBottomOf="@id/btnSinglePlayer"
         android:layout_marginTop="30dp"
+        android:background="@drawable/neon_button_selector"
+        android:text="VS Mode"
+        android:textColor="@android:color/white"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/btnSinglePlayer" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
