@@ -13,6 +13,10 @@ class HighscoreActivity : AppCompatActivity() {
 
         binding = ActivityHighscoreBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.btnBackHighscore.setOnClickListener {
+            finish()
+
+        }
 
         //Placeholder
         binding.score1.text = "1. Micke - 500"

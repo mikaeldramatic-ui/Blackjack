@@ -7,6 +7,18 @@
     android:layout_height="match_parent"
     tools:context=".HighscoreActivity">
 
+    <ImageButton
+        android:id="@+id/btnBackHighscore"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/neon_button_selector"
+        android:src="@drawable/ic_arrow_back"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="50dp"
+        android:layout_marginStart="20dp"
+        app:tint="#AAFF00FF" />
+
 
     <!--Title-->
     <TextView
