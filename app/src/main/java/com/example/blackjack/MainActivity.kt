@@ -25,7 +25,8 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnHighscore.setOnClickListener {
 
-            //TODO open HighscoreActivity
+            val intent = Intent(this, HighscoreActivity::class.java)
+            startActivity(intent)
         }
 
 
