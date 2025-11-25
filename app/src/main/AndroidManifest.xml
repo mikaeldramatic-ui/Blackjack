@@ -21,6 +21,9 @@
             android:name="VsModeActivity"
             android:exported="false"/>
         <activity
+            android:name="RulesActivity"
+            android:exported="false"/>
+        <activity
             android:name=".MainActivity"
             android:exported="true">
 

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/game_rules"
+    tools:context=".RulesActivity">
+
+    <!-- Back Button -->
+
+    <ImageButton
+        android:id="@+id/btnBackRules"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/neon_button_selector"
+        android:src="@drawable/ic_arrow_back"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="50dp"
+        android:layout_marginStart="20dp"
+        app:tint="#AAFF00FF" />
+
+    <!-- Title -->
+
+    <TextView
+        android:id="@+id/rulesTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Rules"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/white"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="60dp" />
+
+    <!-- Scroll Text Area -->
+
+    <ScrollView
+        android:id="@+id/scrollArea"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:padding="20dp"
+        app:layout_constraintTop_toBottomOf="@id/rulesTitle"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/rulesText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/neon_text_background"
+            android:padding="16dp"
+            android:textColor="@android:color/white"
+            android:shadowColor="#000000"
+            android:shadowRadius="6"
+            android:textSize="18sp"
+            android:lineSpacingExtra="6dp"
+            android:text="• Målet är att komma så nära 21 som möjligt.\n
+• Går du över 21 förlorar du.\n
+• Ess är värt 1 eller 11.\n
+• Klädda kort är alltid 10.\n
+• Du spelar mot givaren eller CPU-spelare.\n
+• Du kan välja antal motspelare i VS Mode (1–4 st).\n
+• Tryck Hit för att ta kort.\n
+• Tryck Stand för att stanna.\n
+• Bästa handen vinner!" />
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
