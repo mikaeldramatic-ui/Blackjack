@@ -1,5 +1,6 @@
 package com.example.blackjack
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -25,7 +26,9 @@ class NewGameActivity : AppCompatActivity() {
             finish()
         }
 
-       // binding.bntVsMode.setOnClickListener{
-            //Opens Vs Mode
+        binding.btnVsMode.setOnClickListener {
+            val intent = Intent(this, VsModeActivity::class.java)
+            startActivity(intent)
         }
     }
+}
