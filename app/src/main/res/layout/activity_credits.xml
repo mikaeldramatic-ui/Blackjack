@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/credits"
+    tools:context=".CreditsActivity">
+
+    <!-- Back Button -->
+
+    <ImageButton
+        android:id="@+id/btnBackCredits"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/neon_button_selector"
+        android:src="@drawable/ic_arrow_back"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="50dp"
+        android:layout_marginStart="20dp"
+        app:tint="#AAFF00FF" />
+
+    <!-- Title -->
+
+    <TextView
+        android:id="@+id/creditsTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Credits"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:textColor="#9F50EC"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="60dp" />
+
+    <!-- Scroll Text Area -->
+
+    <ScrollView
+        android:id="@+id/scrollArea"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:padding="20dp"
+        app:layout_constraintTop_toBottomOf="@id/creditsTitle"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/creditsText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/neon_text_background"
+                android:textColor="@android:color/white"
+                android:textSize="19sp"
+                android:lineSpacingExtra="6dp"
+                android:padding="16dp"
+                android:shadowColor="#000000"
+                android:shadowRadius="6"
+                android:text="Created by:\nMikael Engvall\n
+                \nGame Concept &amp; Development:
+                \nDesigned and developed as part of my studies at Folkuniversitetet.
+                \nThank you for providing the knowledge, inspiration, and tools to bring this project to life.\n
+                \nGraphics &amp; Visual Assets:
+                \nSome graphical elements used in this game were sourced from Freepik.com.
+                \nSpecial thanks to the creators and contributors for their high-quality artwork.\n
+                \nPersonal Note:
+                \nThis project was created with passion, curiosity, and the goal of making learning fun.
+                \nI hope you enjoy playing this Blackjack game as much as I enjoyed building it."/>
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
