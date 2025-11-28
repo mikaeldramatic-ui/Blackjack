@@ -3,7 +3,6 @@ package com.example.blackjack
 import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
-import android.view.AbsSavedState
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import android.view.ViewGroup
@@ -19,6 +18,8 @@ class GameBoardActivity : AppCompatActivity() {
     private var playerScore = 0
     private var dealerScore = 0
     private val deck = mutableListOf<String>() //Placeholder every card represent every card (AS , 10H) change later on
+
+    private var dealerHiddenCard: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,6 +46,11 @@ class GameBoardActivity : AppCompatActivity() {
         //Prepare game ( deckcards and so on...) - Implement function down below
         createDeck()
         shuffleDeck()
+
+        dealInitialCards()
+    }
+
+
 
 
         //---------------UI - Handlers-------------
@@ -77,6 +83,34 @@ class GameBoardActivity : AppCompatActivity() {
             builder.show()
         }
 
+    //----------------Card names-------------//
+
+    private fun getCardDrawableName(cardCode: String): String{
+        val rank = cardCode.dropLast(1) //"A", "10", "Q"
+        val suit = cardCode.last()          //"H","C","D","S"
+
+        val rankName = when (rank) {
+            "A" -> "ace"
+            "J" -> "jack"
+            "Q" -> "queen"
+            "K" -> "King"
+            else -> rank //2..10
+        }
+
+        val suitName = when (suit) {
+            "H" -> "hearts"
+            "D" -> "diamonds"
+            "C" -> "clubs"
+            "S" -> "spades"
+            else -> "back"
+        }
+
+        return "card_${rankName}_of_${suitName}"
+    }
+
+
+
+
         //-------------- Game Function-----------
 
         private fun createDeck() {
@@ -91,15 +125,53 @@ class GameBoardActivity : AppCompatActivity() {
             }
         }
 
+    private fun getCardValue(cardCode: String): Int {
+        val rank = cardCode.dropLast[1] // "A","10","K" etc..//
+
+        return when (rank) {
+            "A" -> 11       //handling extra later on
+            "K","Q","J" -> 10
+            else -> rank.toInt() //2-10
+        }
+    }
+
         private fun shuffleDeck() {
             deck.shuffle()
         }
 
         private fun dealInitialCards() {
-            //TODO get two cards to player and to dealer and show them in UI
-            //Examplestructure:
-            //drawCardForPlayer()
-            //draCardForDealer(hidden=true) eventually one hidden card
+
+        // Player gets 2 cards
+            val playerCard1 = deck.removeAt(0)
+            val playerCards2 = deck.removeAt(0)
+
+            addCardImageToLayout(playerCard1, binding.playerCards)
+            addCardImageToLayout(playerCards2, binding.playerCards)
+
+            playerScore +=getCardValue(playerCard1)
+            playerScore +=getCardValue(playerCards2)
+
+            //FIX Aces //
+
+            if (playerScore >21 && (playerCard1.startsWith("A") || playerCards2.startsWith("A"))) {
+                playerScore -=10
+            }
+
+            //Dealer get 1 visible and 1 hidden card//
+
+            val dealerCard1 = deck.removeAt(0 ) //Visible
+            val dealerCard2 = deck.removeAt(0) //hidden
+
+            dealerScore += getCardValue(dealerCard1)
+
+            //Add Visible card
+            addDealerCard(dealerCard1, hidden = false)
+
+            //Hidden card
+            addHiddenCard = dealerCard2
+            addDealerCard(dealerCard2, hidden = true)
+
+            updateScoreOnUI()
         }
 
         private fun hitCardToPlayer() {
@@ -109,27 +181,60 @@ class GameBoardActivity : AppCompatActivity() {
                 shuffleDeck()
             }
             val card = deck.removeAt(0)
-            //TODO Count score for card and uppdate playerScore
+
+            val value = getCardValue(card)
+            playerScore += value
+
+            //ACE fix (if player goes above 21) //
+            if (playerScore> 21 && card.startsWith("A")){
+                playerScore -= 10
+            }
             addCardImageToLayout(card, binding.playerCards)
         }
 
-        private fun dealerPlay() {
-            //Simple placeholder: Dealer pulls till 17 or more
-            //TODO Implement real dealer-logic and update dealerScore
-            while (dealerScore <17) {
-                if (deck.isEmpty()) {
-                    createDeck()
-                    shuffleDeck()
-                }
-                val card = deck.removeAt(0)
-                //TODO : Count score and update dealerScore
-                addCardImageToLayout(card, binding.dealerCards)
+
+
+    private fun dealerPlay() {
+
+        //Flip hidden card
+        dealerHiddenCard?.let { dealerHiddenCard ->
+            //Remove old face-down card
+            binding.dealerCards.removeViewAt(1)
+
+            //Add real card
+            addDealerCard(hidden, hidden = false)
+
+            dealerScore += getCardValue(hidden)
+
+            //Fix Ace
+
+            if  ( dealerScore > 21 && hidden.startWith("A")) {
+                dealerScore -= 10
+            }
+        }
+        dealerHiddenCard = null
+
+        while (dealerScore <17){
+            if(deck.isEmpty()){
+                createDeck()
+                shuffleDeck()
             }
 
+            val card = deck.removeAt(0)
+
+            val value = getCardValue(card)
+            dealerScore += value
+
+            //ACE fix for dealer //
+
+            if(dealerScore >21 && card.startsWith("A")) {
+                dealerScore -=10
+            }
+            addCardImageToLayout(card,binding.dealerCards)
         }
+    }
 
         private fun checkRoundResult() {
-            //TODO: compare playerScore and dealerScore and start win/loose-activity
             //Example placeholder
             if (playerScore >21) {
                 //Start loose-activity
@@ -147,23 +252,53 @@ class GameBoardActivity : AppCompatActivity() {
 
         private fun updateScoreOnUI() {
             binding.playerScore.text = "Player: $playerScore"
-            binding.playerScore.text = "Dealer: $dealerScore"
+            binding.dealerScore.text = "Dealer: $dealerScore"
 
         }
+
+    private fun addDealerCard(cardCode: String, hidden: Boolean) {
+        val iv = ImageView(this)
+
+        if (hidden) {
+            iv.setImageResource(R.drawable.card_back)
+        } else {
+            val drawableName = getCardDrawableName(cardCode)
+            val resId = resources.getIdentifier(drawableName, "drawable", packageName)
+            iv.setImageResource(if (resId !=0) resId else R.drawable.card_back)
+        }
+
+        val lp = ViewGroup.MarginLayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        lp.setMargins(8,0,8,0)
+        iv.layoutParams = lp
+
+        binding.dealerCards.addView(iv)
+    }
 
         private fun addCardImageToLayout(cardCode:String, container: ViewGroup) {
             //Temporary: Showing generic card-Backsida until du have seperate cardpics
             val iv = ImageView(this)
-            //IF leater have drawable-name lika "card 10H add cardCode --> drawable
-            iv.setImageResource(R.drawable.card_back) //Make sure I have a drawable card_back
-            val 1p= ViewGroup.MarginLayoutParams(
+            //Get right drawable-name
+            val drawableName = getCardDrawableName(cardCode)
+
+            //Get ID from drawable
+            val resId = resources.getIdentifier(drawableName, "drawable",packageName)
+
+            //IF card founded -> show -> or -> back
+            iv.setImageResource(if(resId !=0) resId else R.drawable.card_back)
+
+            val lp= ViewGroup.MarginLayoutParams(
             ViewGroup.LayoutParams.WRAP_CONTENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
             )
-            1p.setMargins(8, 0, 8, 0)
-            iv.layoutParams = 1p
+            lp.setMargins(8, 0, 8, 0)
+            iv.layoutParams = lp
                     container.addView(iv)
         }
+
+
 
         private fun startWinsActivity() {
             //TODO : Send information  like score if i want
