@@ -6,7 +6,7 @@ import android.os.PersistableBundle
 import android.view.LayoutInflater
 import androidx.appcompat.app.AppCompatActivity
 import com.example.blackjack.databinding.ActivityLooseBinding
-import java.util.zip.Inflater
+
 
 class LooseActivity : AppCompatActivity() {
 
@@ -16,6 +16,18 @@ class LooseActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding= ActivityLooseBinding.inflate(LayoutInflater)
         setContentView(binding.root)
+
+        //Receive values
+
+        val playerScore = intent.getIntExtra("PlayerScore", 0)
+        val dealerScore = intent.getIntExtra("DealerScore", 0)
+
+        binding.txtLooseTitle.text = "You Lost!"
+        binding.txtScoreInfo.text = "Player: $playerScore\nDealer: $dealerScore"
+
+        binding.btnLooseBackMenu.setOnClickListener {
+            finish()
+        }
 
         //Try again
         binding.btnLoosePlayAgain.setOnClickListener {

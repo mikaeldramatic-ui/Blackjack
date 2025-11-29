@@ -15,6 +15,18 @@ class WinsActivity : AppCompatActivity() {
         binding = ActivityWinsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        //Receive values
+
+        val playerScore = intent.getIntExtra("PlayerScore", 0)
+        val dealerScore = intent.getIntExtra("DealerScore", 0)
+
+        binding.txtWinTitle.text = "You Win!"
+        binding.txtScoreInfo.text = "Player: $playerScore\nDealer: $dealerScore"
+
+        binding.btnWinBackMenu.setOnClickListener {
+            finish()
+        }
+
         //Play Again - Start new Game
 
         binding.btnPlayAgain.setOnClickListener {

@@ -21,6 +21,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
+    <!-- Score -->
+    <TextView
+        android:id="@+id/txtScoreInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Player:  0    Dealer:  0"
+        android:textColor="@android:color/white"
+        android:textSize="22sp"
+        android:layout_marginTop="20dp"
+        app:layout_constraintTop_toBottomOf="@id/txtWinTitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
     <!-- Play Again -->
 
     <Button
@@ -35,6 +48,8 @@
         app:layout_constraintTop_toBottomOf="@id/txtWinTitle"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
+
+
 
     <!-- Back to menu -->
     <Button
