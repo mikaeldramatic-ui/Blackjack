@@ -3,7 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <application
-        android:name="MyApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -27,9 +26,9 @@
         <activity
             android:name="CreditsActivity"
             android:exported="false"/>
-        <activity android:name="WinsActivity"
+        <activity android:name=".WinsActivity"
             android:exported="false"/>
-        <activity android:name="LooseActivity"
+        <activity android:name=".LooseActivity"
             android:exported="false"/>
         <activity
             android:name=".MainActivity"
