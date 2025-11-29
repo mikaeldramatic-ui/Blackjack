@@ -27,6 +27,10 @@
         <activity
             android:name="CreditsActivity"
             android:exported="false"/>
+        <activity android:name="WinsActivity"
+            android:exported="false"/>
+        <activity android:name="LooseActivity"
+            android:exported="false"/>
         <activity
             android:name=".MainActivity"
             android:exported="true">
