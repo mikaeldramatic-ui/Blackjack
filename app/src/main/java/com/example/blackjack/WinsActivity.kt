@@ -1,10 +1,9 @@
 package com.example.blackjack
 
 import android.content.Intent
-import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
 import com.example.blackjack.databinding.ActivityWinsBinding
-import kotlin.jvm.java
 
 class WinsActivity : AppCompatActivity() {
 

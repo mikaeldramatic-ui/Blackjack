@@ -1,11 +1,10 @@
 package com.example.blackjack
 
 import android.content.Intent
-import android.os.Bundle
-import android.os.PersistableBundle
-import android.view.LayoutInflater
 import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
 import com.example.blackjack.databinding.ActivityLooseBinding
+
 
 
 class LooseActivity : AppCompatActivity() {
