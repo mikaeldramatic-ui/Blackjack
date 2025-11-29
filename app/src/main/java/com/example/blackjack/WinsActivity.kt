@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import com.example.blackjack.databinding.ActivityWinsBinding
 
+
 class WinsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityWinsBinding

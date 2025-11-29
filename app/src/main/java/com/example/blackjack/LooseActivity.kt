@@ -7,13 +7,14 @@ import com.example.blackjack.databinding.ActivityLooseBinding
 
 
 
+
 class LooseActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityLooseBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding= ActivityLooseBinding.inflate(LayoutInflater)
+        binding= ActivityLooseBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         //Receive values
