@@ -303,6 +303,7 @@ class GameBoardActivity : AppCompatActivity() {
         intent.putExtra("playerScore", playerScore)
         intent.putExtra("dealerScore", dealerScore)
         startActivity(intent)
+        finish()
     }
 
     private fun startLooseActivity() {
@@ -310,6 +311,7 @@ class GameBoardActivity : AppCompatActivity() {
         intent.putExtra("playerScore", playerScore)
         intent.putExtra("dealerScore", dealerScore)
         startActivity(intent)
+        finish()
     }
 
     private fun animateCardIn(view: ImageView) {
