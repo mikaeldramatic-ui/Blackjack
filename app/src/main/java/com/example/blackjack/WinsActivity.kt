@@ -1,0 +1,34 @@
+package com.example.blackjack
+
+import android.content.Intent
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import com.example.blackjack.databinding.ActivityWinsBinding
+import kotlin.jvm.java
+
+class WinsActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivityWinsBinding
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityWinsBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        //Play Again - Start new Game
+
+        binding.btnPlayAgain.setOnClickListener {
+            val intent = Intent(this, GameBoardActivity::class.java)
+            startActivity(intent)
+            finish() //CLose activity
+        }
+
+        //Back to Main
+
+        binding.btnWinBackMenu.setOnClickListener {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+            finish()
+        }
+    }
+}
