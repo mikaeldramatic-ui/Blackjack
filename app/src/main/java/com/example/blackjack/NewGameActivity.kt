@@ -19,7 +19,8 @@ class NewGameActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.btnSinglePlayer.setOnClickListener {
-            //Opens single player
+          val intent = Intent(this, GameBoardActivity::class.java)
+            startActivity(intent)
         }
         //Back button
         binding.btnBack.setOnClickListener {
