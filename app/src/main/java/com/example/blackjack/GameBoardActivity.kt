@@ -3,6 +3,7 @@ package com.example.blackjack
 import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import android.view.ViewGroup
@@ -335,6 +336,31 @@ class GameBoardActivity : AppCompatActivity() {
             .scaleX(1f)
             .scaleY(1f)
             .setDuration(200)
+            .start()
+    }
+
+    private fun showBlackjackAnimation(onFinish: () -> Unit) {
+        val overlay = binding.blackjackOverlay
+        overlay.visibility = View.VISIBLE
+        overlay.scaleX = 0f
+        overlay.scaleY = 0f
+        overlay.alpha = 0f
+
+        overlay.animate()
+            .alpha(1f)
+            .scaleX(1.2f)
+            .scaleY(1.2f)
+            .setDuration(400)
+            .withEndAction {
+                overlay.animate()
+                    .alpha(0f)
+                    .setDuration(500)
+                    .withEndAction {
+                        overlay.visibility = View.GONE
+                        onFinish()
+                    }
+                    .start()
+            }
             .start()
     }
 }
