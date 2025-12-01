@@ -17,10 +17,15 @@ class WinsActivity : AppCompatActivity() {
 
         //Receive values
 
-        val playerScore = intent.getIntExtra("PlayerScore", 0)
-        val dealerScore = intent.getIntExtra("DealerScore", 0)
+        val playerScore = intent.getIntExtra("PlayerScore", playerScore)
+        val dealerScore = intent.getIntExtra("DealerScore", dealerScore)
+        val isBlackjack = intent.getBooleanExtra("blackjack",false)
 
         binding.txtWinTitle.text = "You Win!"
+
+        if (isBlackjack) {
+            binding.txtWinTitle.text = "BLACKJACK!"
+        }
         binding.txtScoreInfo.text = "Player: $playerScore\nDealer: $dealerScore"
 
         binding.btnWinBackMenu.setOnClickListener {
