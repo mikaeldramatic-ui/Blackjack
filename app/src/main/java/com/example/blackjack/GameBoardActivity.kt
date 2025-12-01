@@ -140,6 +140,16 @@ class GameBoardActivity : AppCompatActivity() {
         if (playerScore > 21 && (playerCard1.startsWith("A") || playerCard2.startsWith("A"))) {
             playerScore -= 10
         }
+        //Blackjack Check
+        if (playerScore ==21) {
+            val intent = Intent(this, WinsActivity::class.java )
+            intent.putExtra("playerScore", playerScore)
+            intent.putExtra("dealerScore", dealerScore)
+            intent.putExtra("blackjack", true)
+            startActivity(intent)
+            finish()
+            return
+        }
 
         // Dealer gets 1 visible and 1 hidden card
         val dealerCard1 = deck.removeAt(0) // visible
@@ -302,6 +312,7 @@ class GameBoardActivity : AppCompatActivity() {
         val intent = Intent(this, WinsActivity::class.java)
         intent.putExtra("playerScore", playerScore)
         intent.putExtra("dealerScore", dealerScore)
+        intent.putExtra("blackjack", blackjack)
         startActivity(intent)
         finish()
     }
