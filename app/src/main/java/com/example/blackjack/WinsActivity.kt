@@ -17,27 +17,20 @@ class WinsActivity : AppCompatActivity() {
 
         //Receive values
 
-        val playerScore = intent.getIntExtra("PlayerScore", playerScore)
-        val dealerScore = intent.getIntExtra("DealerScore", dealerScore)
+        val playerScore = intent.getIntExtra("PlayerScore", 0)
+        val dealerScore = intent.getIntExtra("DealerScore", 0)
         val isBlackjack = intent.getBooleanExtra("blackjack",false)
 
-        binding.txtWinTitle.text = "You Win!"
+        binding.txtWinTitle.text = if (isBlackjack) "BLACKJACK!" else "You Win!"
 
-        if (isBlackjack) {
-            binding.txtWinTitle.text = "BLACKJACK!"
-        }
-        binding.txtScoreInfo.text = "Player: $playerScore\nDealer: $dealerScore"
-
-        binding.btnWinBackMenu.setOnClickListener {
-            finish()
-        }
+        binding.txtScoreInfo.text= "Player: $playerScore\nDealer: $dealerScore"
 
         //Play Again - Start new Game
 
         binding.btnPlayAgain.setOnClickListener {
             val intent = Intent(this, GameBoardActivity::class.java)
             startActivity(intent)
-            finish() //CLose activity
+            finish() //Close activity
         }
 
         //Back to Main
