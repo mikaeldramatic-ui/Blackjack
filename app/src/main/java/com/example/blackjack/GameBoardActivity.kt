@@ -3,6 +3,7 @@ package com.example.blackjack
 import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -19,7 +20,8 @@ class GameBoardActivity : AppCompatActivity() {
     private var dealerScore = 0
     private val deck = mutableListOf<String>() // e.g. "AH", "10S", "QC"
 
-    private var dealerHiddenCard: String? = null
+   private var dealerHiddenCardCode: String? =null
+    private var dealerHiddenImageView: ImageView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,23 +77,17 @@ class GameBoardActivity : AppCompatActivity() {
         val rank = cardCode.dropLast(1) // "A", "10", "Q"
         val suit = cardCode.last()      // 'H','C','D','S' -> Char
 
-        val rankName = when (rank) {
-            "A" -> "ace"
-            "J" -> "jack"
-            "Q" -> "queen"
-            "K" -> "king"   // lowercase for consistency
-            else -> rank    // 2..10
-        }
+        val rankLower = rank.lowercase()
 
-        val suitName = when (suit) {
-            'H' -> "hearts"
-            'D' -> "diamonds"
-            'C' -> "clubs"
-            'S' -> "spades"
+        val suitLetter = when (suit) {
+            'H' -> "h"
+            'D' -> "d"
+            'C' -> "c"
+            'S' -> "s"
             else -> "back"
         }
 
-        return "card_${rankName}_of_${suitName}"
+        return "card_${rankLower}_${suitLetter}"
     }
 
     // -------------- Game functions --------------
@@ -121,6 +117,14 @@ class GameBoardActivity : AppCompatActivity() {
     }
 
     private fun dealInitialCards() {
+
+        //Reset views & scores
+
+        binding.playerCards.removeAllViews()
+        binding.dealerCards.removeAllViews()
+        playerScore = 0
+        dealerScore = 0
+
         // Ensure deck has enough cards
         if (deck.size < 4) {
             createDeck()
@@ -163,10 +167,21 @@ class GameBoardActivity : AppCompatActivity() {
         // Add visible card
         addDealerCard(dealerCard1, hidden = false)
 
-        // Hidden card (face down)
-        dealerHiddenCard = dealerCard2
-        addDealerCard(dealerCard2, hidden = true)
+        //Create and add hidden ImageView
 
+        val iv= ImageView(this)
+        iv.setImageResource(R.drawable.card_back)
+        val lp = ViewGroup.MarginLayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        lp.setMargins(8,0,8,0)
+        iv.layoutParams = lp
+                binding.dealerCards.addView(iv)
+        animateCardIn(iv)
+
+        dealerHiddenCardCode = dealerCard2
+        dealerHiddenImageView = iv
         updateScoreOnUI()
     }
 
@@ -189,73 +204,91 @@ class GameBoardActivity : AppCompatActivity() {
 
     private fun dealerPlay() {
         // Flip dealer's hidden card (if any)
-        dealerHiddenCard?.let { hidden ->
-            // Get the face-down card (second card)
-            val hiddenView = binding.dealerCards.getChildAt(1)
-            if (hiddenView is ImageView) {
-                val hiddenCardView = hiddenView
-
-                val drawableName = getCardDrawableName(hidden)
+        dealerHiddenCardCode?.let { hiddenCode ->
+            dealerHiddenImageView?.let { hiddenIv ->
+                val drawableName = getCardDrawableName(hiddenCode)
                 val realResId = resources.getIdentifier(drawableName, "drawable", packageName)
 
-                // Flip animation (flipCard must exist)
-                flipCard(hiddenCardView, realResId)
+                if (realResId !=0) {
+                    //Flip animation then set real image
+                    flipCard(hiddenIv, realResId)
+                } else {
+                    //Fallback if resID missing
+                    hiddenIv.setImageResource(R.drawable.card_back)
+                }
 
-                // Update dealer score with that hidden card
-                dealerScore += getCardValue(hidden)
-                if (dealerScore > 21 && hidden.startsWith("A")) {
+                //Update Dealer score with that hidden card
+                dealerScore += getCardValue(hiddenCode)
+                if (dealerScore > 21 && hiddenCode.startsWith("A")) {
                     dealerScore -= 10
                 }
-            } else {
-                // Fallback: if not an ImageView, remove and add real card
-                binding.dealerCards.removeViewAt(1)
-                addDealerCard(hidden, hidden = false)
-                dealerScore += getCardValue(hidden)
-                if (dealerScore > 21 && hidden.startsWith("A")) {
-                    dealerScore -= 10
+                updateScoreOnUI()
+
+            } ?: run {
+                //If we don't have image  (edge case) remove view at 1 and add real card
+                if (binding.dealerCards.childCount >1) {
+                    binding.dealerCards.removeViewAt(1)
                 }
+                addDealerCard(hiddenCode, hidden = false)
+                dealerScore += getCardValue(hiddenCode)
+                if (dealerScore >21 && hiddenCode.startsWith("A")) dealerScore -=10
+                updateScoreOnUI()
+
             }
         }
 
-        // Hidden card has been shown
-        dealerHiddenCard = null
+        //Hidden card has been shown
+        dealerHiddenCardCode = null
+        dealerHiddenImageView = null
 
-        // Dealer draws until 17
-        while (dealerScore < 17) {
+        //Dealer draws until 17
+        while ( dealerScore < 17) {
             if (deck.isEmpty()) {
                 createDeck()
                 shuffleDeck()
             }
-
             val card = deck.removeAt(0)
             val value = getCardValue(card)
             dealerScore += value
 
-            // ACE fix for dealer
+            //Ace fix for dealer
+
             if (dealerScore > 21 && card.startsWith("A")) {
                 dealerScore -= 10
             }
 
             addCardImageToLayout(card, binding.dealerCards)
+            updateScoreOnUI()
         }
     }
 
-    private fun checkRoundResult() {
-        if (playerScore > 21) {
+    private fun checkRoundResult(){
+        //Controlling who won after game finished
+
+        //Player bust
+        if(playerScore >21) {
             startLooseActivity()
-        } else if (dealerScore > 21 || playerScore > dealerScore) {
-            startWinsActivity()
-        } else if (playerScore == dealerScore) {
-            // Push - Tie (handle as you want)
-        } else {
-            startLooseActivity()
+            return
         }
+
+        //Dealer bust
+        if(dealerScore >21 || playerScore > dealerScore) {
+            startWinsActivity()
+            return
+        }
+
+        //Else the dealer wins
+        (startLooseActivity())
     }
 
     // ------------- UI helper --------------
     private fun updateScoreOnUI() {
         binding.playerScore.text = "Player: $playerScore"
         binding.dealerScore.text = "Dealer: $dealerScore"
+    }
+
+    private fun dpToPx(dp: Int): Int{
+        return (dp * resources.displayMetrics.density + 0.5f).toInt()
     }
 
     private fun addDealerCard(cardCode: String, hidden: Boolean) {
@@ -280,15 +313,24 @@ class GameBoardActivity : AppCompatActivity() {
         animateCardIn(iv)
     }
 
+    private fun dpTopx(dp: Int) : Int{
+        return (dp * resources.displayMetrics.density + 0.5f).toInt()
+    }
+
     private fun addCardImageToLayout(cardCode: String, container: ViewGroup) {
         val iv = ImageView(this)
         val drawableName = getCardDrawableName(cardCode)
         val resId = resources.getIdentifier(drawableName, "drawable", packageName)
+        if (resId == 0) {
+            // fallback och logg
+            Log.w("GameBoard", "Drawable not found: $drawableName for cardCode=$cardCode")
+        }
         iv.setImageResource(if (resId != 0) resId else R.drawable.card_back)
 
+        iv.scaleType = ImageView.ScaleType.FIT_CENTER
         val lp = ViewGroup.MarginLayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
+            dpToPx(72), // Width in Dp -adjusment after how big card i want
+            dpToPx(100) //Height in dp
         )
         lp.setMargins(8, 0, 8, 0)
         iv.layoutParams = lp
