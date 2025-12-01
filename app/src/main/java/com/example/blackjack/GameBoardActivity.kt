@@ -143,12 +143,14 @@ class GameBoardActivity : AppCompatActivity() {
         }
         //Blackjack Check
         if (playerScore ==21) {
-            val intent = Intent(this, WinsActivity::class.java )
-            intent.putExtra("playerScore", playerScore)
-            intent.putExtra("dealerScore", dealerScore)
-            intent.putExtra("blackjack", true)
-            startActivity(intent)
-            finish()
+            showBlackjackAnimation {
+                val intent = Intent(this, WinsActivity::class.java)
+                intent.putExtra("playerScore", playerScore)
+                intent.putExtra("dealerScore", dealerScore)
+                intent.putExtra("blackjack", true)
+                startActivity(intent)
+                finish()
+            }
             return
         }
 
