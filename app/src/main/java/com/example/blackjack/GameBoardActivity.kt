@@ -312,7 +312,7 @@ class GameBoardActivity : AppCompatActivity() {
         val intent = Intent(this, WinsActivity::class.java)
         intent.putExtra("playerScore", playerScore)
         intent.putExtra("dealerScore", dealerScore)
-        intent.putExtra("blackjack", blackjack)
+        intent.putExtra("blackjack", false)
         startActivity(intent)
         finish()
     }
