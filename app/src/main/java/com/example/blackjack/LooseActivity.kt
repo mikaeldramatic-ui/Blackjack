@@ -25,10 +25,6 @@ class LooseActivity : AppCompatActivity() {
         binding.txtLooseTitle.text = "You Lost!"
         binding.txtScoreInfo.text = "Player: $playerScore\nDealer: $dealerScore"
 
-        binding.btnLooseBackMenu.setOnClickListener {
-            finish()
-        }
-
         //Try again
         binding.btnLoosePlayAgain.setOnClickListener {
             val intent = Intent(this, GameBoardActivity::class.java)
