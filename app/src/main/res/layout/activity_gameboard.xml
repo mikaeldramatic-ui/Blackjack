@@ -49,6 +49,20 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
+    <!-- Player Money -->
+
+    <TextView
+        android:id="@+id/playerMoney"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Money : $200"
+        android:textColor="@android:color/white"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/dealerScore"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="8dp"/>
+
     <!-- Player score -->
     <TextView
         android:id="@+id/playerScore"
@@ -115,7 +129,25 @@
         android:layout_height="match_parent"
         android:gravity="center"
         android:text="BLACKJACK!"
-        android:textColor="@android:color/white"
+        android:textColor="@android:color/holo_orange_light"
+        android:textSize="55sp"
+        android:textStyle="italic"
+        android:background="#AA000000"
+        android:visibility="gone"
+        android:alpha="0"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- Win Overlay -->
+    <TextView
+        android:id="@+id/winOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="YOU WIN!!"
+        android:textColor="@android:color/holo_green_light"
         android:textSize="48sp"
         android:textStyle="bold"
         android:background="#AA000000"
@@ -125,4 +157,23 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- Lose Overlay -->
+    <TextView
+        android:id="@+id/loseOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="YOU LOST!"
+        android:textColor="@android:color/holo_red_light"
+        android:textSize="48sp"
+        android:textStyle="bold"
+        android:background="#AA000000"
+        android:visibility="gone"
+        android:alpha="0"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
