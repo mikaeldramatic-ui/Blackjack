@@ -15,37 +15,34 @@ class GameBoardActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityGameboardBinding
 
-    // Game - Variables
+    // Game variables
     private var playerScore = 0
     private var dealerScore = 0
-    private val deck = mutableListOf<String>() // e.g. "AH", "10S", "QC"
+    private val deck = mutableListOf<String>()
 
-   private var dealerHiddenCardCode: String? =null
+    private var dealerHiddenCardCode: String? = null
     private var dealerHiddenImageView: ImageView? = null
+
+    private val handler = android.os.Handler()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityGameboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Init UI With StartValue
         binding.playerScore.text = "Player: 0"
         binding.dealerScore.text = "Dealer: 0"
 
-        // Buttons
         binding.btnHit.setOnClickListener { onHitClicked() }
         binding.btnStand.setOnClickListener { onStandClicked() }
         binding.btnQuit.setOnClickListener { showQuitDialog() }
 
-        // Prepare game (deck cards and so on...)
         createDeck()
         shuffleDeck()
-
-        // Deal initial cards
         dealInitialCards()
     }
 
-    // --------------- UI - Handlers -------------
+    // --- UI Handlers ---
     private fun onHitClicked() {
         hitCardToPlayer()
         updateScoreOnUI()
@@ -53,135 +50,99 @@ class GameBoardActivity : AppCompatActivity() {
 
     private fun onStandClicked() {
         dealerPlay()
-        updateScoreOnUI()
-        checkRoundResult()
     }
 
     private fun showQuitDialog() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Quit Game?")
-        builder.setMessage("Are you sure you want to quit the current game?")
-        builder.setPositiveButton("Yes") { dialog: DialogInterface, _: Int ->
-            dialog.dismiss()
+        val b = AlertDialog.Builder(this)
+        b.setTitle("Quit Game?")
+        b.setMessage("Are you sure you want to quit?")
+        b.setPositiveButton("Yes") { d: DialogInterface, _ ->
+            d.dismiss()
             finish()
         }
-        builder.setNegativeButton("No") { dialog: DialogInterface, _: Int ->
-            dialog.dismiss()
-        }
-        builder.setCancelable(true)
-        builder.show()
+        b.setNegativeButton("No") { d, _ -> d.dismiss() }
+        b.show()
     }
 
-    // ---------------- Card names ----------------
+    // --- Card image naming ---
     private fun getCardDrawableName(cardCode: String): String {
-        val rank = cardCode.dropLast(1) // "A", "10", "Q"
-        val suit = cardCode.last()      // 'H','C','D','S' -> Char
-
-        val rankLower = rank.lowercase()
-
-        val suitLetter = when (suit) {
+        val rank = cardCode.dropLast(1).lowercase()
+        val suit = when (cardCode.last()) {
             'H' -> "h"
             'D' -> "d"
             'C' -> "c"
             'S' -> "s"
             else -> "back"
         }
-
-        return "card_${rankLower}_${suitLetter}"
+        return "card_${rank}_${suit}"
     }
 
-    // -------------- Game functions --------------
+    // --- Deck ---
     private fun createDeck() {
         deck.clear()
         val ranks = listOf("A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K")
         val suits = listOf("H", "D", "C", "S")
-        for (s in suits) {
-            for (r in ranks) {
-                deck.add(r + s)
-            }
-        }
-    }
-
-    private fun getCardValue(cardCode: String): Int {
-        val rank = cardCode.dropLast(1) // "A","10","K" etc.
-
-        return when (rank) {
-            "A" -> 11
-            "K", "Q", "J" -> 10
-            else -> rank.toInt()
-        }
+        for (s in suits) for (r in ranks) deck.add(r + s)
     }
 
     private fun shuffleDeck() {
         deck.shuffle()
     }
 
+    private fun getCardValue(cardCode: String): Int {
+        return when (val rank = cardCode.dropLast(1)) {
+            "A" -> 11
+            "K", "Q", "J" -> 10
+            else -> rank.toInt()
+        }
+    }
+
+    // --- Deal initial cards ---
     private fun dealInitialCards() {
-
-        //Reset views & scores
-
         binding.playerCards.removeAllViews()
         binding.dealerCards.removeAllViews()
+
         playerScore = 0
         dealerScore = 0
 
-        // Ensure deck has enough cards
         if (deck.size < 4) {
             createDeck()
             shuffleDeck()
         }
 
-        // Player gets 2 cards
-        val playerCard1 = deck.removeAt(0)
-        val playerCard2 = deck.removeAt(0)
+        val p1 = deck.removeAt(0)
+        val p2 = deck.removeAt(0)
 
-        addCardImageToLayout(playerCard1, binding.playerCards)
-        addCardImageToLayout(playerCard2, binding.playerCards)
+        addCardImageToLayout(p1, binding.playerCards)
+        addCardImageToLayout(p2, binding.playerCards)
 
-        playerScore += getCardValue(playerCard1)
-        playerScore += getCardValue(playerCard2)
+        playerScore += getCardValue(p1) + getCardValue(p2)
+        if (playerScore > 21 && (p1.startsWith("A") || p2.startsWith("A"))) playerScore -= 10
 
-        // Fix Aces for player
-        if (playerScore > 21 && (playerCard1.startsWith("A") || playerCard2.startsWith("A"))) {
-            playerScore -= 10
-        }
-        //Blackjack Check
-        if (playerScore ==21) {
-            showBlackjackAnimation {
-                val intent = Intent(this, WinsActivity::class.java)
-                intent.putExtra("playerScore", playerScore)
-                intent.putExtra("dealerScore", dealerScore)
-                intent.putExtra("blackjack", true)
-                startActivity(intent)
-                finish()
-            }
-            return
-        }
+        val d1 = deck.removeAt(0)
+        val d2 = deck.removeAt(0)
 
-        // Dealer gets 1 visible and 1 hidden card
-        val dealerCard1 = deck.removeAt(0) // visible
-        val dealerCard2 = deck.removeAt(0) // hidden
+        dealerScore += getCardValue(d1)
 
-        dealerScore += getCardValue(dealerCard1)
+        addDealerCard(d1, hidden = false)
 
-        // Add visible card
-        addDealerCard(dealerCard1, hidden = false)
-
-        //Create and add hidden ImageView
-
-        val iv= ImageView(this)
+        // Add hidden dealer card
+        val iv = ImageView(this)
         iv.setImageResource(R.drawable.card_back)
+
         val lp = ViewGroup.MarginLayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
+            dpToPx(72),
+            dpToPx(100)
         )
-        lp.setMargins(8,0,8,0)
+        lp.setMargins(8, 0, 8, 0)
         iv.layoutParams = lp
-                binding.dealerCards.addView(iv)
+
+        binding.dealerCards.addView(iv, 1)
         animateCardIn(iv)
 
-        dealerHiddenCardCode = dealerCard2
+        dealerHiddenCardCode = d2
         dealerHiddenImageView = iv
+
         updateScoreOnUI()
     }
 
@@ -190,121 +151,103 @@ class GameBoardActivity : AppCompatActivity() {
             createDeck()
             shuffleDeck()
         }
+
         val card = deck.removeAt(0)
+        playerScore += getCardValue(card)
+        if (playerScore > 21 && card.startsWith("A")) playerScore -= 10
 
-        val value = getCardValue(card)
-        playerScore += value
-
-        // ACE fix (if player goes above 21)
-        if (playerScore > 21 && card.startsWith("A")) {
-            playerScore -= 10
-        }
         addCardImageToLayout(card, binding.playerCards)
     }
 
+    // --- Dealer logic ---
     private fun dealerPlay() {
-        // Flip dealer's hidden card (if any)
-        dealerHiddenCardCode?.let { hiddenCode ->
-            dealerHiddenImageView?.let { hiddenIv ->
-                val drawableName = getCardDrawableName(hiddenCode)
-                val realResId = resources.getIdentifier(drawableName, "drawable", packageName)
 
-                if (realResId !=0) {
-                    //Flip animation then set real image
-                    flipCard(hiddenIv, realResId)
-                } else {
-                    //Fallback if resID missing
-                    hiddenIv.setImageResource(R.drawable.card_back)
+        // 1. dealer shows hiddencard after a while
+        handler.postDelayed({
+
+            dealerHiddenCardCode?.let { code ->
+                dealerHiddenImageView?.let { iv ->
+                    val realRes = resources.getIdentifier(
+                        getCardDrawableName(code), "drawable", packageName
+                    )
+                    if (realRes != 0) flipCard(iv, realRes)
+
+                    dealerScore += getCardValue(code)
+                    if (dealerScore > 21 && code.startsWith("A")) dealerScore -= 10
+                    updateScoreOnUI()
                 }
-
-                //Update Dealer score with that hidden card
-                dealerScore += getCardValue(hiddenCode)
-                if (dealerScore > 21 && hiddenCode.startsWith("A")) {
-                    dealerScore -= 10
-                }
-                updateScoreOnUI()
-
-            } ?: run {
-                //If we don't have image  (edge case) remove view at 1 and add real card
-                if (binding.dealerCards.childCount >1) {
-                    binding.dealerCards.removeViewAt(1)
-                }
-                addDealerCard(hiddenCode, hidden = false)
-                dealerScore += getCardValue(hiddenCode)
-                if (dealerScore >21 && hiddenCode.startsWith("A")) dealerScore -=10
-                updateScoreOnUI()
-
-            }
-        }
-
-        //Hidden card has been shown
-        dealerHiddenCardCode = null
-        dealerHiddenImageView = null
-
-        //Dealer draws until 17
-        while ( dealerScore < 17) {
-            if (deck.isEmpty()) {
-                createDeck()
-                shuffleDeck()
-            }
-            val card = deck.removeAt(0)
-            val value = getCardValue(card)
-            dealerScore += value
-
-            //Ace fix for dealer
-
-            if (dealerScore > 21 && card.startsWith("A")) {
-                dealerScore -= 10
             }
 
-            addCardImageToLayout(card, binding.dealerCards)
-            updateScoreOnUI()
-        }
+            dealerHiddenCardCode = null
+            dealerHiddenImageView = null
+
+            // 2. dealer start with drag
+            handler.postDelayed({
+
+                drawDealerCardsSequentially()
+
+            }, 600)
+
+        }, 600)
     }
 
-    private fun checkRoundResult(){
-        //Controlling who won after game finished
-
-        //Player bust
-        if(playerScore >21) {
-            startLooseActivity()
+    private fun drawDealerCardsSequentially() {
+        if(dealerScore > 17) {
+            //Done and shows results after card pause
+            handler.postDelayed({checkRoundResult()},700)
             return
         }
 
-        //Dealer bust
-        if(dealerScore >21 || playerScore > dealerScore) {
-            startWinsActivity()
-            return
+        if (deck.isEmpty()) {
+            createDeck()
+            shuffleDeck()
         }
 
-        //Else the dealer wins
-        (startLooseActivity())
+        val card = deck.removeAt(0)
+        dealerScore += getCardValue(card)
+        if(dealerScore > 21 && card.startsWith("A")) dealerScore -=10
+
+        addDealerCard(card, hidden = false)
+        updateScoreOnUI()
+
+        //Draw next card after 600ms
+        handler.postDelayed({
+            checkRoundResult()
+        }, 700 )
     }
 
-    // ------------- UI helper --------------
+    private fun checkRoundResult() {
+        when {
+            playerScore > 21 -> startLooseActivity()
+            dealerScore > 21 || playerScore > dealerScore -> startWinsActivity()
+            else -> startLooseActivity()
+        }
+    }
+
+    // --- UI helpers ---
     private fun updateScoreOnUI() {
         binding.playerScore.text = "Player: $playerScore"
         binding.dealerScore.text = "Dealer: $dealerScore"
     }
 
-    private fun dpToPx(dp: Int): Int{
+    private fun dpToPx(dp: Int): Int {
         return (dp * resources.displayMetrics.density + 0.5f).toInt()
     }
+
 
     private fun addDealerCard(cardCode: String, hidden: Boolean) {
         val iv = ImageView(this)
 
-        if (hidden) {
-            iv.setImageResource(R.drawable.card_back)
-        } else {
-            val drawableName = getCardDrawableName(cardCode)
-            val resId = resources.getIdentifier(drawableName, "drawable", packageName)
-            iv.setImageResource(if (resId != 0) resId else R.drawable.card_back)
-        }
+        val resName = if (hidden) "card_back" else getCardDrawableName(cardCode)
+        val resId = resources.getIdentifier(resName, "drawable", packageName)
+        iv.setImageResource(if (resId != 0) resId else R.drawable.card_back)
+
+        iv.scaleType = ImageView.ScaleType.CENTER_INSIDE
+
 
         val lp = ViewGroup.MarginLayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
+            dpToPx(72),   // width
+            dpToPx(100)   // height
         )
         lp.setMargins(8, 0, 8, 0)
         iv.layoutParams = lp
@@ -312,99 +255,52 @@ class GameBoardActivity : AppCompatActivity() {
         binding.dealerCards.addView(iv)
         animateCardIn(iv)
     }
-
-    private fun dpTopx(dp: Int) : Int{
-        return (dp * resources.displayMetrics.density + 0.5f).toInt()
-    }
+    // -----------------------------------------------
 
     private fun addCardImageToLayout(cardCode: String, container: ViewGroup) {
         val iv = ImageView(this)
-        val drawableName = getCardDrawableName(cardCode)
-        val resId = resources.getIdentifier(drawableName, "drawable", packageName)
-        if (resId == 0) {
-            // fallback och logg
-            Log.w("GameBoard", "Drawable not found: $drawableName for cardCode=$cardCode")
-        }
-        iv.setImageResource(if (resId != 0) resId else R.drawable.card_back)
+        val name = getCardDrawableName(cardCode)
+        val id = resources.getIdentifier(name, "drawable", packageName)
+        iv.setImageResource(if (id != 0) id else R.drawable.card_back)
 
-        iv.scaleType = ImageView.ScaleType.FIT_CENTER
-        val lp = ViewGroup.MarginLayoutParams(
-            dpToPx(72), // Width in Dp -adjusment after how big card i want
-            dpToPx(100) //Height in dp
-        )
+        iv.scaleType = ImageView.ScaleType.CENTER_INSIDE
+
+        val lp = ViewGroup.MarginLayoutParams(dpToPx(72), dpToPx(100))
         lp.setMargins(8, 0, 8, 0)
         iv.layoutParams = lp
-        container.addView(iv)
 
+        container.addView(iv)
         animateCardIn(iv)
     }
 
     private fun flipCard(imageView: ImageView, realResId: Int) {
-        imageView.animate()
-            .scaleX(0f)
-            .setDuration(150)
-            .withEndAction {
-                imageView.setImageResource(realResId)
-                imageView.animate()
-                    .scaleX(1f)
-                    .setDuration(150)
-                    .start()
-            }
-            .start()
+        imageView.animate().scaleX(0f).setDuration(150).withEndAction {
+            imageView.setImageResource(realResId)
+            imageView.animate().scaleX(1f).setDuration(150).start()
+        }.start()
     }
 
     private fun startWinsActivity() {
-        val intent = Intent(this, WinsActivity::class.java)
-        intent.putExtra("playerScore", playerScore)
-        intent.putExtra("dealerScore", dealerScore)
-        intent.putExtra("blackjack", false)
-        startActivity(intent)
+        val i = Intent(this, WinsActivity::class.java)
+        i.putExtra("playerScore", playerScore)
+        i.putExtra("dealerScore", dealerScore)
+        i.putExtra("blackjack", false)
+        startActivity(i)
         finish()
     }
 
     private fun startLooseActivity() {
-        val intent = Intent(this, LooseActivity::class.java)
-        intent.putExtra("playerScore", playerScore)
-        intent.putExtra("dealerScore", dealerScore)
-        startActivity(intent)
+        val i = Intent(this, LooseActivity::class.java)
+        i.putExtra("playerScore", playerScore)
+        i.putExtra("dealerScore", dealerScore)
+        startActivity(i)
         finish()
     }
 
-    private fun animateCardIn(view: ImageView) {
-        view.scaleX = 0f
-        view.scaleY = 0f
-        view.alpha = 0f
-
-        view.animate()
-            .alpha(1f)
-            .scaleX(1f)
-            .scaleY(1f)
-            .setDuration(200)
-            .start()
-    }
-
-    private fun showBlackjackAnimation(onFinish: () -> Unit) {
-        val overlay = binding.blackjackOverlay
-        overlay.visibility = View.VISIBLE
-        overlay.scaleX = 0f
-        overlay.scaleY = 0f
-        overlay.alpha = 0f
-
-        overlay.animate()
-            .alpha(1f)
-            .scaleX(1.2f)
-            .scaleY(1.2f)
-            .setDuration(400)
-            .withEndAction {
-                overlay.animate()
-                    .alpha(0f)
-                    .setDuration(500)
-                    .withEndAction {
-                        overlay.visibility = View.GONE
-                        onFinish()
-                    }
-                    .start()
-            }
-            .start()
+    private fun animateCardIn(v: ImageView) {
+        v.scaleX = 0f
+        v.scaleY = 0f
+        v.alpha = 0f
+        v.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(200).start()
     }
 }
