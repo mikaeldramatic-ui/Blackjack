@@ -3,97 +3,433 @@ package com.example.blackjack
 import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import com.example.blackjack.databinding.ActivityGameboardBinding
+import kotlin.random.Random
 
 class GameBoardActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityGameboardBinding
 
-    // Game - Variables
+    // Money
+    private var playerMoney = 200
+    private var currentBet = 0
+
+    // Game variables
     private var playerScore = 0
     private var dealerScore = 0
-    private val deck = mutableListOf<String>() // e.g. "AH", "10S", "QC"
+    private val deck = mutableListOf<String>()
 
-    private var dealerHiddenCard: String? = null
+    private var dealerHiddenCardCode: String? = null
+    private var dealerHiddenImageView: ImageView? = null
+
+    // Use main looper handler
+    private val handler = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityGameboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Init UI With StartValue
+        // UI default text
         binding.playerScore.text = "Player: 0"
         binding.dealerScore.text = "Dealer: 0"
+        binding.playerMoney.text = "Money: $$playerMoney"
 
-        // Buttons
+        // Button listeners
         binding.btnHit.setOnClickListener { onHitClicked() }
         binding.btnStand.setOnClickListener { onStandClicked() }
         binding.btnQuit.setOnClickListener { showQuitDialog() }
 
-        // Prepare game (deck cards and so on...)
+        // Prepare deck
         createDeck()
         shuffleDeck()
 
-        // Deal initial cards
-        dealInitialCards()
+        // Begin with bet prompt
+        askForBet()
     }
 
-    // --------------- UI - Handlers -------------
+    // -------------------- Betting --------------------
+    private fun askForBet() {
+        if (playerMoney < 10) {
+            showNoMoneyDialog()
+            return
+        }
+
+        val bets = arrayOf("10", "20", "50", "100")
+
+        AlertDialog.Builder(this)
+            .setTitle("Place Your Bet")
+            .setItems(bets) { _, which ->
+                currentBet = bets[which].toInt()
+                if (currentBet > playerMoney) currentBet = 10
+
+                binding.playerMoney.text = "Money: $$playerMoney"
+
+                // After bet - start round
+                dealInitialCards()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    // -------------------- Deal initial --------------------
+    private fun dealInitialCards() {
+        binding.playerCards.removeAllViews()
+        binding.dealerCards.removeAllViews()
+
+        playerScore = 0
+        dealerScore = 0
+
+        if (deck.size < 4) {
+            createDeck()
+            shuffleDeck()
+        }
+
+        // Player 2 cards
+        val p1 = deck.removeAt(0)
+        val p2 = deck.removeAt(0)
+        addCardImageToLayout(p1, binding.playerCards)
+        addCardImageToLayout(p2, binding.playerCards)
+        playerScore += getCardValue(p1) + getCardValue(p2)
+        if (playerScore > 21 && (p1.startsWith("A") || p2.startsWith("A"))) playerScore -= 10
+        if(playerScore ==21) {
+            showBlackjackOverlay()
+        } else if(dealerScore==21) {
+            showBlackjackOverlay()
+            return
+            //TODO see if that worked fully.
+        }
+
+
+        // Dealer: one visible, one hidden
+        val d1 = deck.removeAt(0)
+        val d2 = deck.removeAt(0)
+
+        dealerScore += getCardValue(d1)
+        addDealerCard(d1, hidden = false)
+
+        // Create hidden ImageView (always same size as others)
+        val iv = ImageView(this)
+        iv.setImageResource(R.drawable.card_back)
+
+        val lp = ViewGroup.MarginLayoutParams(dpToPx(72), dpToPx(100))
+        lp.setMargins(8, 0, 8, 0)
+        iv.layoutParams = lp
+
+        // ensure hidden card becomes second child (index 1)
+        binding.dealerCards.addView(iv, 1)
+        animateCardIn(iv)
+
+        dealerHiddenCardCode = d2
+        dealerHiddenImageView = iv
+
+        updateScoreOnUI()
+    }
+
+    // -------------------- Hit --------------------
     private fun onHitClicked() {
         hitCardToPlayer()
         updateScoreOnUI()
     }
 
+    private fun hitCardToPlayer() {
+        if (deck.isEmpty()) {
+            createDeck()
+            shuffleDeck()
+        }
+
+        val card = deck.removeAt(0)
+        playerScore += getCardValue(card)
+        if (playerScore > 21 && card.startsWith("A")) playerScore -= 10
+
+        addCardImageToLayout(card, binding.playerCards)
+    }
+
+    // -------------------- Stand (dealer sequence) --------------------
     private fun onStandClicked() {
         dealerPlay()
+    }
+
+    private fun dealerPlay() {
+        // 1) Flip hidden card after short delay so player sees it
+        handler.postDelayed({
+            dealerHiddenCardCode?.let { code ->
+                dealerHiddenImageView?.let { iv ->
+                    val realRes = resources.getIdentifier(getCardDrawableName(code), "drawable", packageName)
+                    if (realRes != 0) flipCard(iv, realRes)
+                    // update dealer score with hidden card
+                    dealerScore += getCardValue(code)
+                    if (dealerScore > 21 && code.startsWith("A")) dealerScore -= 10
+                    updateScoreOnUI()
+                }
+            }
+
+            dealerHiddenCardCode = null
+            dealerHiddenImageView = null
+
+            // 2) After a small pause start drawing dealer cards sequentially
+            handler.postDelayed({
+                drawDealerCardsSequentially()
+            }, 600)
+
+        }, 600)
+    }
+
+    private fun drawDealerCardsSequentially() {
+        // Dealer stops at 17 or more
+        if (dealerScore >= 17) {
+            // wait a little and then show result
+            handler.postDelayed({ checkRoundResult() }, 700)
+            return
+        }
+
+        if (deck.isEmpty()) {
+            createDeck()
+            shuffleDeck()
+        }
+
+        val card = deck.removeAt(0)
+        dealerScore += getCardValue(card)
+        if (dealerScore > 21 && card.startsWith("A")) dealerScore -= 10
+
+        addDealerCard(card, hidden = false)
         updateScoreOnUI()
-        checkRoundResult()
+
+        // continue after delay
+        handler.postDelayed({ drawDealerCardsSequentially() }, 700)
     }
 
+    // -------------------- Check result & money --------------------
+    private fun checkRoundResult() {
+        when {
+            playerScore > 21 -> {
+                playerMoney -= currentBet
+                binding.playerMoney.text = "Money: $$playerMoney"
+                showLoseOverlay()
+            }
+            dealerScore > 21 || playerScore > dealerScore -> {
+                playerMoney += currentBet
+                binding.playerMoney.text = "Money: $$playerMoney"
+                showWinOverlay()
+            }
+            else -> {
+                playerMoney -= currentBet
+                binding.playerMoney.text = "Money: $$playerMoney"
+                showLoseOverlay()
+            }
+        }
+    }
+
+    private fun goToWin() {
+        binding.playerMoney.text = "Money: $$playerMoney"
+        startWinsActivity()
+    }
+
+    private fun goToLose() {
+        binding.playerMoney.text = "Money: $$playerMoney"
+        startLooseActivity()
+    }
+    //Quit game
     private fun showQuitDialog() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Quit Game?")
-        builder.setMessage("Are you sure you want to quit the current game?")
-        builder.setPositiveButton("Yes") { dialog: DialogInterface, _: Int ->
-            dialog.dismiss()
-            finish()
-        }
-        builder.setNegativeButton("No") { dialog: DialogInterface, _: Int ->
-            dialog.dismiss()
-        }
-        builder.setCancelable(true)
-        builder.show()
+        AlertDialog.Builder(this)
+            .setTitle("Quit Game?")
+            .setMessage("Are you sure you want to quit?")
+            .setPositiveButton("Yes") { dialog, _ ->
+                dialog.dismiss()
+                finish()
+            }
+            .setNegativeButton("No") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
     }
 
-    // ---------------- Card names ----------------
-    private fun getCardDrawableName(cardCode: String): String {
-        val rank = cardCode.dropLast(1) // "A", "10", "Q"
-        val suit = cardCode.last()      // 'H','C','D','S' -> Char
 
-        val rankName = when (rank) {
-            "A" -> "ace"
-            "J" -> "jack"
-            "Q" -> "queen"
-            "K" -> "king"   // lowercase for consistency
-            else -> rank    // 2..10
-        }
 
-        val suitName = when (suit) {
-            'H' -> "hearts"
-            'D' -> "diamonds"
-            'C' -> "clubs"
-            'S' -> "spades"
-            else -> "back"
-        }
+    // Win Overlay
 
-        return "card_${rankName}_of_${suitName}"
+    private fun showWinOverlay() {
+        val overlay = binding.winOverlay
+        overlay.visibility = View.VISIBLE
+        overlay.alpha = 0f
+        overlay.scaleX = 0.8f
+        overlay.scaleY = 0.8f
+
+        overlay.animate()
+            .alpha(1f)
+            .scaleX(1f)
+            .scaleY(1f)
+            .setDuration(400)
+            .withEndAction {
+
+                handler.postDelayed({
+                    overlay.animate()
+                        .alpha(0f)
+                        .setDuration(400)
+                        .withEndAction {
+                            overlay.visibility = View.GONE
+                            askForBet()
+                        }.start()
+                }, 700)
+            }.start()
     }
 
-    // -------------- Game functions --------------
+    private fun showLoseOverlay() {
+        val overlay = binding.loseOverlay
+        overlay.visibility = View.VISIBLE
+        overlay.alpha = 0f
+        overlay.scaleX = 0.8f
+        overlay.scaleY = 0.8f
+
+        overlay.animate()
+            .alpha(1f)
+            .scaleX(1f)
+            .scaleY(1f)
+            .setDuration(400)
+            .withEndAction {
+
+                handler.postDelayed({
+                    overlay.animate()
+                        .alpha(0f)
+                        .setDuration(400)
+                        .withEndAction {
+                            overlay.visibility = View.GONE
+
+                            if (playerMoney < 10) {
+                                startLooseActivity()
+                            } else {
+                                askForBet()
+                            }
+                        }.start()
+                }, 700)
+            }.start()
+    }
+
+    private fun showBlackjackOverlay() {
+        val overlay = binding.blackjackOverlay
+        overlay.visibility = View.VISIBLE
+        overlay.alpha = 0f
+        overlay.scaleX = 0.8f
+        overlay.scaleY = 0.8f
+
+        overlay.animate()
+            .alpha(1f)
+            .scaleX(1f)
+            .scaleY(1f)
+            .setDuration(400)
+            .withEndAction {
+
+                handler.postDelayed({
+                    overlay.animate()
+                        .alpha(0f)
+                        .setDuration(400)
+                        .withEndAction {
+                            overlay.visibility = View.GONE
+
+                            //Black Jack Payout
+
+                            playerMoney += (currentBet * 2)
+                            binding.playerMoney.text = "Money: $$playerMoney"
+
+                            //Start Next Round
+                            askForBet()
+                        }
+                        .start()
+                }, 800)
+            }
+            .start()
+    }
+    private fun showNoMoneyDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Game Over")
+            .setMessage("You don't have enough money to continue!")
+            .setPositiveButton("Back to menu") { _, _ -> finish() }
+            .setCancelable(false)
+            .show()
+    }
+
+    // -------------------- UI helpers --------------------
+    private fun updateScoreOnUI() {
+        binding.playerScore.text = "Player: $playerScore"
+        binding.dealerScore.text = "Dealer: $dealerScore"
+    }
+
+    private fun dpToPx(dp: Int): Int {
+        return (dp * resources.displayMetrics.density + 0.5f).toInt()
+    }
+
+    private fun addDealerCard(cardCode: String, hidden: Boolean) {
+        val iv = ImageView(this)
+        val resName = if (hidden) "card_back" else getCardDrawableName(cardCode)
+        val resId = resources.getIdentifier(resName, "drawable", packageName)
+        iv.setImageResource(if (resId != 0) resId else R.drawable.card_back)
+
+        // make sure scaleType keeps consistent appearance
+        iv.scaleType = ImageView.ScaleType.CENTER_INSIDE
+
+        val lp = ViewGroup.MarginLayoutParams(dpToPx(72), dpToPx(100))
+        lp.setMargins(8, 0, 8, 0)
+        iv.layoutParams = lp
+
+        binding.dealerCards.addView(iv)
+        animateCardIn(iv)
+    }
+
+    private fun addCardImageToLayout(cardCode: String, container: ViewGroup) {
+        val iv = ImageView(this)
+        val name = getCardDrawableName(cardCode)
+        val id = resources.getIdentifier(name, "drawable", packageName)
+        iv.setImageResource(if (id != 0) id else R.drawable.card_back)
+
+        iv.scaleType = ImageView.ScaleType.CENTER_INSIDE
+        val lp = ViewGroup.MarginLayoutParams(dpToPx(72), dpToPx(100))
+        lp.setMargins(8, 0, 8, 0)
+        iv.layoutParams = lp
+
+        container.addView(iv)
+        animateCardIn(iv)
+    }
+
+    private fun flipCard(imageView: ImageView, realResId: Int) {
+        imageView.animate().scaleX(0f).setDuration(150).withEndAction {
+            imageView.setImageResource(realResId)
+            imageView.animate().scaleX(1f).setDuration(150).start()
+        }.start()
+    }
+
+    private fun startWinsActivity() {
+        val i = Intent(this, WinsActivity::class.java)
+        i.putExtra("playerScore", playerScore)
+        i.putExtra("dealerScore", dealerScore)
+        i.putExtra("blackjack", false)
+        startActivity(i)
+        //finish()
+    }
+
+    private fun startLooseActivity() {
+        val i = Intent(this, LooseActivity::class.java)
+        i.putExtra("playerScore", playerScore)
+        i.putExtra("dealerScore", dealerScore)
+        startActivity(i)
+        //finish()
+    }
+
+    private fun animateCardIn(v: ImageView) {
+        v.scaleX = 0f
+        v.scaleY = 0f
+        v.alpha = 0f
+        v.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(200).start()
+    }
+
+    // -------------------- Deck utilities --------------------
     private fun createDeck() {
         deck.clear()
         val ranks = listOf("A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K")
@@ -105,236 +441,30 @@ class GameBoardActivity : AppCompatActivity() {
         }
     }
 
-    private fun getCardValue(cardCode: String): Int {
-        val rank = cardCode.dropLast(1) // "A","10","K" etc.
+    private fun shuffleDeck() {
+        // simple shuffle
+        deck.shuffle(Random(System.currentTimeMillis()))
+    }
 
+    private fun getCardValue(cardCode: String): Int {
+        val rank = cardCode.dropLast(1)
         return when (rank) {
             "A" -> 11
             "K", "Q", "J" -> 10
-            else -> rank.toInt()
+            else -> rank.toIntOrNull() ?: 0
         }
     }
 
-    private fun shuffleDeck() {
-        deck.shuffle()
-    }
-
-    private fun dealInitialCards() {
-        // Ensure deck has enough cards
-        if (deck.size < 4) {
-            createDeck()
-            shuffleDeck()
+    private fun getCardDrawableName(cardCode: String): String {
+        val rank = cardCode.dropLast(1).lowercase() // "a", "10", "q"
+        val suitChar = cardCode.last()
+        val suit = when (suitChar) {
+            'H' -> "h"
+            'D' -> "d"
+            'C' -> "c"
+            'S' -> "s"
+            else -> "back"
         }
-
-        // Player gets 2 cards
-        val playerCard1 = deck.removeAt(0)
-        val playerCard2 = deck.removeAt(0)
-
-        addCardImageToLayout(playerCard1, binding.playerCards)
-        addCardImageToLayout(playerCard2, binding.playerCards)
-
-        playerScore += getCardValue(playerCard1)
-        playerScore += getCardValue(playerCard2)
-
-        // Fix Aces for player
-        if (playerScore > 21 && (playerCard1.startsWith("A") || playerCard2.startsWith("A"))) {
-            playerScore -= 10
-        }
-        //Blackjack Check
-        if (playerScore ==21) {
-            val intent = Intent(this, WinsActivity::class.java )
-            intent.putExtra("playerScore", playerScore)
-            intent.putExtra("dealerScore", dealerScore)
-            intent.putExtra("blackjack", true)
-            startActivity(intent)
-            finish()
-            return
-        }
-
-        // Dealer gets 1 visible and 1 hidden card
-        val dealerCard1 = deck.removeAt(0) // visible
-        val dealerCard2 = deck.removeAt(0) // hidden
-
-        dealerScore += getCardValue(dealerCard1)
-
-        // Add visible card
-        addDealerCard(dealerCard1, hidden = false)
-
-        // Hidden card (face down)
-        dealerHiddenCard = dealerCard2
-        addDealerCard(dealerCard2, hidden = true)
-
-        updateScoreOnUI()
-    }
-
-    private fun hitCardToPlayer() {
-        if (deck.isEmpty()) {
-            createDeck()
-            shuffleDeck()
-        }
-        val card = deck.removeAt(0)
-
-        val value = getCardValue(card)
-        playerScore += value
-
-        // ACE fix (if player goes above 21)
-        if (playerScore > 21 && card.startsWith("A")) {
-            playerScore -= 10
-        }
-        addCardImageToLayout(card, binding.playerCards)
-    }
-
-    private fun dealerPlay() {
-        // Flip dealer's hidden card (if any)
-        dealerHiddenCard?.let { hidden ->
-            // Get the face-down card (second card)
-            val hiddenView = binding.dealerCards.getChildAt(1)
-            if (hiddenView is ImageView) {
-                val hiddenCardView = hiddenView
-
-                val drawableName = getCardDrawableName(hidden)
-                val realResId = resources.getIdentifier(drawableName, "drawable", packageName)
-
-                // Flip animation (flipCard must exist)
-                flipCard(hiddenCardView, realResId)
-
-                // Update dealer score with that hidden card
-                dealerScore += getCardValue(hidden)
-                if (dealerScore > 21 && hidden.startsWith("A")) {
-                    dealerScore -= 10
-                }
-            } else {
-                // Fallback: if not an ImageView, remove and add real card
-                binding.dealerCards.removeViewAt(1)
-                addDealerCard(hidden, hidden = false)
-                dealerScore += getCardValue(hidden)
-                if (dealerScore > 21 && hidden.startsWith("A")) {
-                    dealerScore -= 10
-                }
-            }
-        }
-
-        // Hidden card has been shown
-        dealerHiddenCard = null
-
-        // Dealer draws until 17
-        while (dealerScore < 17) {
-            if (deck.isEmpty()) {
-                createDeck()
-                shuffleDeck()
-            }
-
-            val card = deck.removeAt(0)
-            val value = getCardValue(card)
-            dealerScore += value
-
-            // ACE fix for dealer
-            if (dealerScore > 21 && card.startsWith("A")) {
-                dealerScore -= 10
-            }
-
-            addCardImageToLayout(card, binding.dealerCards)
-        }
-    }
-
-    private fun checkRoundResult() {
-        if (playerScore > 21) {
-            startLooseActivity()
-        } else if (dealerScore > 21 || playerScore > dealerScore) {
-            startWinsActivity()
-        } else if (playerScore == dealerScore) {
-            // Push - Tie (handle as you want)
-        } else {
-            startLooseActivity()
-        }
-    }
-
-    // ------------- UI helper --------------
-    private fun updateScoreOnUI() {
-        binding.playerScore.text = "Player: $playerScore"
-        binding.dealerScore.text = "Dealer: $dealerScore"
-    }
-
-    private fun addDealerCard(cardCode: String, hidden: Boolean) {
-        val iv = ImageView(this)
-
-        if (hidden) {
-            iv.setImageResource(R.drawable.card_back)
-        } else {
-            val drawableName = getCardDrawableName(cardCode)
-            val resId = resources.getIdentifier(drawableName, "drawable", packageName)
-            iv.setImageResource(if (resId != 0) resId else R.drawable.card_back)
-        }
-
-        val lp = ViewGroup.MarginLayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        )
-        lp.setMargins(8, 0, 8, 0)
-        iv.layoutParams = lp
-
-        binding.dealerCards.addView(iv)
-        animateCardIn(iv)
-    }
-
-    private fun addCardImageToLayout(cardCode: String, container: ViewGroup) {
-        val iv = ImageView(this)
-        val drawableName = getCardDrawableName(cardCode)
-        val resId = resources.getIdentifier(drawableName, "drawable", packageName)
-        iv.setImageResource(if (resId != 0) resId else R.drawable.card_back)
-
-        val lp = ViewGroup.MarginLayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        )
-        lp.setMargins(8, 0, 8, 0)
-        iv.layoutParams = lp
-        container.addView(iv)
-
-        animateCardIn(iv)
-    }
-
-    private fun flipCard(imageView: ImageView, realResId: Int) {
-        imageView.animate()
-            .scaleX(0f)
-            .setDuration(150)
-            .withEndAction {
-                imageView.setImageResource(realResId)
-                imageView.animate()
-                    .scaleX(1f)
-                    .setDuration(150)
-                    .start()
-            }
-            .start()
-    }
-
-    private fun startWinsActivity() {
-        val intent = Intent(this, WinsActivity::class.java)
-        intent.putExtra("playerScore", playerScore)
-        intent.putExtra("dealerScore", dealerScore)
-        intent.putExtra("blackjack", false)
-        startActivity(intent)
-        finish()
-    }
-
-    private fun startLooseActivity() {
-        val intent = Intent(this, LooseActivity::class.java)
-        intent.putExtra("playerScore", playerScore)
-        intent.putExtra("dealerScore", dealerScore)
-        startActivity(intent)
-        finish()
-    }
-
-    private fun animateCardIn(view: ImageView) {
-        view.scaleX = 0f
-        view.scaleY = 0f
-        view.alpha = 0f
-
-        view.animate()
-            .alpha(1f)
-            .scaleX(1f)
-            .scaleY(1f)
-            .setDuration(200)
-            .start()
+        return "card_${rank}_$suit"
     }
 }

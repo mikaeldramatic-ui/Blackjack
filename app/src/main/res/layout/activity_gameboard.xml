@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -8,77 +9,87 @@
     tools:context=".GameBoardActivity">
 
     <!-- Quit Button -->
-
     <ImageButton
         android:id="@+id/btnQuit"
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:background="@drawable/neon_button_red_selector"
         android:src="@drawable/ic_close"
+        android:contentDescription="Quit Game"
         android:layout_marginTop="40dp"
         android:layout_marginEnd="20dp"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:contentDescription="Quit Game"/>
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <!-- Dealer score -->
-
     <TextView
         android:id="@+id/dealerScore"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Dealer:0"
+        android:text="Dealer: 0"
         android:textColor="@android:color/white"
         android:textSize="22sp"
         android:textStyle="bold"
-        android:layout_marginTop="30dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="parent"/>
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="20dp"
+        app:layout_constraintTop_toBottomOf="@id/btnQuit"
+        app:layout_constraintStart_toStartOf="parent"/>
 
-    <!--Dealer cards -->
-
+    <!-- Dealer cards -->
     <LinearLayout
         android:id="@+id/dealerCards"
-        android:layout_width="wrap_content"
-        android:layout_height="100dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
-        android:layout_marginTop="20dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:layout_marginTop="16dp"
         app:layout_constraintTop_toBottomOf="@id/dealerScore"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Player score -->
+    <!-- Player Money -->
 
+    <TextView
+        android:id="@+id/playerMoney"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Money : $200"
+        android:textColor="@android:color/white"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/dealerScore"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="8dp"/>
+
+    <!-- Player score -->
     <TextView
         android:id="@+id/playerScore"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Player:0"
+        android:text="Player: 0"
         android:textColor="@android:color/white"
         android:textSize="22sp"
         android:textStyle="bold"
-        android:layout_marginBottom="20dp"
-        app:layout_constraintBottom_toTopOf="@id/playerCards"
+        android:layout_marginTop="40dp"
+        app:layout_constraintTop_toBottomOf="@id/dealerCards"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
     <!-- Player Cards -->
-
     <LinearLayout
         android:id="@+id/playerCards"
         android:layout_width="wrap_content"
         android:layout_height="120dp"
         android:orientation="horizontal"
         android:gravity="center"
-        android:layout_marginBottom="150dp"
-        app:layout_constraintBottom_toTopOf="@id/actionRow"
+        android:layout_marginTop="12dp"
+        app:layout_constraintTop_toBottomOf="@id/playerScore"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Hit and Stand Side- by side -->
-
+    <!-- Hit + Stand Buttons -->
     <LinearLayout
         android:id="@+id/actionRow"
         android:layout_width="wrap_content"
@@ -90,31 +101,79 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-    <!-- Hit Button -->
+        <Button
+            android:id="@+id/btnHit"
+            android:layout_width="120dp"
+            android:layout_height="50dp"
+            android:text="HIT"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:background="@drawable/neon_button_green_selector"
+            android:layout_marginEnd="16dp"/>
 
-    <Button
-        android:id="@+id/btnHit"
-        android:layout_width="120dp"
-        android:layout_height="50dp"
-        android:text="HIT"
-        android:textSize="18sp"
-        android:textColor="@android:color/white"
-        android:background="@drawable/neon_button_green_selector"
-        android:layout_marginEnd="16dp"/>
-
-
-    <!-- Stand Button -->
-
-    <Button
-        android:id="@+id/btnStand"
-        android:layout_width="120dp"
-        android:layout_height="50dp"
-        android:text="STAND"
-        android:textSize="18sp"
-        android:textColor="@android:color/white"
-        android:background="@drawable/neon_button_red_selector"
-        android:layout_marginStart="16dp"/>
-
+        <Button
+            android:id="@+id/btnStand"
+            android:layout_width="120dp"
+            android:layout_height="50dp"
+            android:text="STAND"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:background="@drawable/neon_button_red_selector"
+            android:layout_marginStart="16dp"/>
     </LinearLayout>
+
+    <!-- Blackjack Overlay -->
+    <TextView
+        android:id="@+id/blackjackOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="BLACKJACK!"
+        android:textColor="@android:color/holo_orange_light"
+        android:textSize="55sp"
+        android:textStyle="italic"
+        android:background="#AA000000"
+        android:visibility="gone"
+        android:alpha="0"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- Win Overlay -->
+    <TextView
+        android:id="@+id/winOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="YOU WIN!!"
+        android:textColor="@android:color/holo_green_light"
+        android:textSize="48sp"
+        android:textStyle="bold"
+        android:background="#AA000000"
+        android:visibility="gone"
+        android:alpha="0"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- Lose Overlay -->
+    <TextView
+        android:id="@+id/loseOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="YOU LOST!"
+        android:textColor="@android:color/holo_red_light"
+        android:textSize="48sp"
+        android:textStyle="bold"
+        android:background="#AA000000"
+        android:visibility="gone"
+        android:alpha="0"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
