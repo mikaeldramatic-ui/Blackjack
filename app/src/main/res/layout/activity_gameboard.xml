@@ -89,6 +89,24 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
+    <LinearLayout
+        android:id="@+id/playerHand1"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center_horizontal"
+        android:visibility="gone"
+        android:layout_marginTop="8dp"/>
+
+    <LinearLayout
+        android:id="@+id/playerHand2"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center_horizontal"
+        android:visibility="gone"
+        android:layout_marginTop="8dp"/>
+
     <!-- Hit + Stand Buttons -->
     <LinearLayout
         android:id="@+id/actionRow"
@@ -122,58 +140,163 @@
             android:layout_marginStart="16dp"/>
     </LinearLayout>
 
+    <!-- Split Button -->
+
+    <Button
+        android:id="@+id/btnSplit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Split"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/btnHit"
+        app:layout_constraintStart_toEndOf="@id/btnHit"
+        android:layout_marginStart="16dp"/>
+
     <!-- Blackjack Overlay -->
-    <TextView
+    <FrameLayout
         android:id="@+id/blackjackOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center"
-        android:text="BLACKJACK!"
-        android:textColor="@android:color/holo_orange_light"
-        android:textSize="55sp"
-        android:textStyle="italic"
         android:background="#AA000000"
         android:visibility="gone"
         android:alpha="0"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/blackjackTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BLACKJACK!"
+            android:textColor="@android:color/holo_orange_light"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            android:layout_gravity="center"/>
+
+        <!-- Win / Lose / Push amount -->
+        <TextView
+            android:id="@+id/blackjackAmount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+0"
+            android:textColor="@android:color/holo_orange_light"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="120dp"/>
+
+        <!-- Total Money -->
+        <TextView
+            android:id="@+id/blackjackTotal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Money: $0"
+            android:textColor="@android:color/white"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="40dp"/>
+
+    </FrameLayout>
 
     <!-- Win Overlay -->
-    <TextView
+    <FrameLayout
         android:id="@+id/winOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center"
-        android:text="YOU WIN!!"
-        android:textColor="@android:color/holo_green_light"
-        android:textSize="48sp"
-        android:textStyle="bold"
         android:background="#AA000000"
         android:visibility="gone"
         android:alpha="0"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <!-- Lose Overlay -->
-    <TextView
+        <!-- Main win text -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="YOU WIN!!"
+            android:textColor="@android:color/holo_green_light"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            android:layout_gravity="center"/>
+
+        <!-- Amount text (+50 etc) -->
+        <TextView
+            android:id="@+id/winAmountText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+0"
+            android:textColor="@android:color/holo_green_light"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="120dp"/>
+
+        <!-- Total money text -->
+        <TextView
+            android:id="@+id/winTotalMoney"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Money: $0"
+            android:textColor="@android:color/holo_green_light"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="40dp"/>
+
+    </FrameLayout>
+
+    <FrameLayout
         android:id="@+id/loseOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center"
-        android:text="YOU LOST!"
-        android:textColor="@android:color/holo_red_light"
-        android:textSize="48sp"
-        android:textStyle="bold"
         android:background="#AA000000"
         android:visibility="gone"
         android:alpha="0"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Main lose text -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="YOU LOST!"
+            android:textColor="@android:color/holo_red_light"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            android:layout_gravity="center"/>
+
+        <!-- Amount text (-50 etc) -->
+        <TextView
+            android:id="@+id/loseAmountText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-0"
+            android:textColor="@android:color/holo_red_light"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="120dp"/>
+
+        <!-- Total money text -->
+        <TextView
+            android:id="@+id/loseTotalMoney"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Money: $0"
+            android:textColor="@android:color/holo_red_light"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="40dp"/>
+
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
