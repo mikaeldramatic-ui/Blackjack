@@ -1,7 +1,5 @@
 package com.example.blackjack
 
-import android.R.attr.type
-import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -13,7 +11,6 @@ import android.widget.ImageView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.blackjack.databinding.ActivityGameboardBinding
-import java.time.temporal.TemporalAmount
 import kotlin.random.Random
 
 class GameBoardActivity : AppCompatActivity() {
@@ -45,8 +42,17 @@ class GameBoardActivity : AppCompatActivity() {
     private var dealerHiddenCardCode: String? = null
     private var dealerHiddenImageView: ImageView? = null
 
-    // Use main looper handler for delays
+    // Ace preference flags (user-chosen)
+    private var mainPreferAceAsOne = false
+    private var hand1PreferAceAsOne = false
+    private var hand2PreferAceAsOne = false
+
+    private val manualAceValues = mutableMapOf<String, Int>()
+
+    // Use main looper handler for delayed actions
     private val handler = Handler(Looper.getMainLooper())
+
+    private var aceDialogInProgress = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,7 +97,7 @@ class GameBoardActivity : AppCompatActivity() {
                 currentBet = bets[which].toInt()
                 if (currentBet > playerMoney) currentBet = 10
 
-                // Deduct the player's bet once now (split will deduct a second time if used)
+                // Deduct the player's bet now (split will deduct again if used)
                 playerMoney -= currentBet
                 binding.playerMoney.text = "Money: $$playerMoney"
 
@@ -104,8 +110,6 @@ class GameBoardActivity : AppCompatActivity() {
     // -------------------- Deal initial --------------------
     private fun dealInitialCards() {
         enablePlayerButtons()
-
-        // UI containers reset
         binding.playerCards.visibility = View.VISIBLE
         binding.playerHand1.visibility = View.GONE
         binding.playerHand2.visibility = View.GONE
@@ -125,24 +129,31 @@ class GameBoardActivity : AppCompatActivity() {
         hand1Score = 0
         hand2Score = 0
 
-        if (deck.size < 4) {
+        manualAceValues.clear()
+
+        // reset ace preferences each round
+        mainPreferAceAsOne = false
+        hand1PreferAceAsOne = false
+        hand2PreferAceAsOne = false
+
+        if (deck.size < 6) {
             createDeck()
             shuffleDeck()
         }
 
-        // Player 2 cards
+        // Player: draw 2 cards
         val p1 = deck.removeAt(0)
         val p2 = deck.removeAt(0)
 
-        // logical lists
+        // fill logical player list
         playerCards.add(p1)
         playerCards.add(p2)
 
-        // UI show them
+        // show them on UI
         addCardImageToLayout(p1, binding.playerCards)
         addCardImageToLayout(p2, binding.playerCards)
 
-        // compute logical scores (best/hard score)
+        // compute raw best score
         playerScore = calculateBestScore(playerCards)
 
         // Prepare split logical hands (one card each)
@@ -155,11 +166,10 @@ class GameBoardActivity : AppCompatActivity() {
         val d1 = deck.removeAt(0)
         val d2 = deck.removeAt(0)
 
-        dealerScore = 0
-        dealerScore += getCardValue(d1)
+        dealerScore = getCardValue(d1)
         addDealerCard(d1, hidden = false)
 
-        // Create and place dealer hidden card image
+        // Create hidden ImageView for dealer second card
         val iv = ImageView(this)
         iv.setImageResource(R.drawable.card_back)
         val lp = ViewGroup.MarginLayoutParams(dpToPx(72), dpToPx(100))
@@ -171,21 +181,31 @@ class GameBoardActivity : AppCompatActivity() {
         dealerHiddenCardCode = d2
         dealerHiddenImageView = iv
 
-        // Update UI — use formatAceScore so Ace prompt appears immediately
+        // update UI scores (show soft/hard if ace)
         updateScoreOnUI()
         updateSplitScoresOnUi()
 
-        // Offer Split if applicable (only if not already split and rules allow)
+        // Offer Split if applicable
         checkForSplitOption(p1, p2)
 
-        // Black Jack Logic (evaluate using best scores)
-        val playerBlackjack = (calculateBestScore(playerCards) == 21 && playerCards.size == 2)
-        val dealerBlackjack = (getCardValue(cardCode = d1) + getCardValue(d2) == 21)
+        // Black Jack Logic
+        val playerBlackjack = (playerScore == 21)
+        val dealerBlackjack = (getCardValue(d1) + getCardValue(d2) == 21)
 
-        // If someone has blackjack, end round immediately
+        // If player has an ace in initial deal and not blackjack -> prompt immediately
+        val playerHasAceInitially = p1.startsWith("A") || p2.startsWith("A")
+        if (playerHasAceInitially && !playerBlackjack) {
+            // small post so UI settles
+            handler.post {
+                Log.d("ACE_DEBUG", "Initial deal: Ace found in $playerCards -> prompting")
+                promptAceChoiceFor("main", p1.takeIf { it.startsWith("A") } ?: p2)
+            }
+        }
+
+        // If either has blackjack handle and stop round
         if (!playerBlackjack && !dealerBlackjack) return
 
-        // Round over — disable player buttons and hide split
+        // Round ends instantly -> disable buttons + handle blackjack outcomes
         disablePlayerButtons()
         binding.btnSplit.visibility = View.GONE
         binding.btnSplit.isEnabled = false
@@ -204,8 +224,8 @@ class GameBoardActivity : AppCompatActivity() {
         }
     }
 
+    // -------------------- Split option --------------------
     private fun checkForSplitOption(card1: String, card2: String) {
-        // If already split this round — don't show
         if (isSplit) {
             binding.btnSplit.visibility = View.GONE
             binding.btnSplit.isEnabled = false
@@ -218,7 +238,6 @@ class GameBoardActivity : AppCompatActivity() {
         val value1 = getCardValue(card1)
         val value2 = getCardValue(card2)
 
-        // Rule: split ANY 10-value or same rank (A+A, 8+8, Q+Q)
         val bothAre10Value = (value1 == 10 && value2 == 10)
         val sameRank = rank1 == rank2
 
@@ -232,14 +251,13 @@ class GameBoardActivity : AppCompatActivity() {
     }
 
     private fun handleBlackjackOutcome(result: String) {
-        // Flip dealer hidden card immediately
+        // reveal dealer hidden card immediately
         dealerHiddenCardCode?.let { code ->
             dealerHiddenImageView?.let { iv ->
                 val realRes = resources.getIdentifier(getCardDrawableName(code), "drawable", packageName)
                 if (realRes != 0) flipCard(iv, realRes)
             }
         }
-
         dealerHiddenCardCode = null
         dealerHiddenImageView = null
 
@@ -252,7 +270,7 @@ class GameBoardActivity : AppCompatActivity() {
                 showBlackjackOverlay("player", amount)
             }
             "dealer" -> {
-                // Player already paid bet when betting; losing here means no refund
+                // player already paid bet — show overlay
                 binding.playerMoney.text = "Money: $$playerMoney"
                 showBlackjackOverlay("dealer")
             }
@@ -261,13 +279,10 @@ class GameBoardActivity : AppCompatActivity() {
 
     // -------------------- Hit --------------------
     private fun onHitClicked() {
-        // Normal (no split)
         if (!isSplit) {
             hitCardToPlayer()
-            // Update UI immediately (this will show ace prompt if card was an Ace)
             updateScoreOnUI()
-
-            // disable split once player has chosen hit (cannot split anymore)
+            // Player can no longer split after hitting
             binding.btnSplit.visibility = View.GONE
             binding.btnSplit.isEnabled = false
 
@@ -281,13 +296,15 @@ class GameBoardActivity : AppCompatActivity() {
         // Split mode
         if (isPlayingHand1) {
             hitSplitHand1()
-            // update UI for split hands
             updateSplitScoresOnUi()
             updateSplitHandHighLight()
 
             if (hand1Score > 21) {
+                // move to hand2 if hand1 busted
                 isPlayingHand1 = false
                 binding.playerHand1.alpha = 0.5f
+                binding.playerHand2.alpha = 1f
+                updateSplitHandHighLight()
             }
         } else {
             hitSplitHand2()
@@ -322,10 +339,9 @@ class GameBoardActivity : AppCompatActivity() {
         binding.playerHand1.visibility = View.VISIBLE
         binding.playerHand2.visibility = View.VISIBLE
 
-        // Clean and add the single card to each split hand UI
+        // Clear and place initial single card for each hand
         binding.playerHand1.removeAllViews()
         binding.playerHand2.removeAllViews()
-
         addCardImageToLayout(hand1Cards[0], binding.playerHand1)
         addCardImageToLayout(hand2Cards[0], binding.playerHand2)
 
@@ -334,56 +350,53 @@ class GameBoardActivity : AppCompatActivity() {
         hand2Score = calculateBestScore(hand2Cards)
         updateSplitScoresOnUi()
 
-        // Highlight active hand
+        // Start with hand1 active
         binding.playerHand1.alpha = 1f
         binding.playerHand2.alpha = 0.4f
-
         updateSplitHandHighLight()
-        updateScoreOnUI()
     }
 
     // -------------------- Split hits --------------------
-
     private fun hitSplitHand1() {
-        if (deck.isEmpty()) { createDeck(); shuffleDeck() }
+        if (deck.isEmpty()) {
+            createDeck(); shuffleDeck()
+        }
 
         val card = deck.removeAt(0)
         hand1Cards.add(card)
         addCardImageToLayout(card, binding.playerHand1)
 
+        Log.d("ACE_DEBUG", "HIT: drew $card into HAND1 -> $hand1Cards")
+
         hand1Score = calculateBestScore(hand1Cards)
         updateSplitScoresOnUi()
 
-        // If bust or single ace split rule: move to second hand
-        if (hand1Score > 21 || hand1Cards.first().startsWith("A")) {
-            isPlayingHand1 = false
-            binding.playerHand1.alpha = 0.5f
-            binding.playerHand2.alpha = 1f
-            updateSplitHandHighLight()
-            // If hand1 busts we still allow to play second hand
+        if (card.startsWith("A")) {
+            promptAceChoiceFor("hand1", card)
+        }
+
+        if (hand1Score > 21) {
+            // will be handled in prompt or directly in UI flow
             return
         }
     }
 
     private fun hitSplitHand2() {
-        if (deck.isEmpty()) { createDeck(); shuffleDeck() }
+        if (deck.isEmpty()) {
+            createDeck(); shuffleDeck()
+        }
 
         val card = deck.removeAt(0)
         hand2Cards.add(card)
         addCardImageToLayout(card, binding.playerHand2)
 
+        Log.d("ACE_DEBUG", "HIT: drew $card into HAND2 -> $hand2Cards")
+
         hand2Score = calculateBestScore(hand2Cards)
         updateSplitScoresOnUi()
 
-        if (hand2Score > 21) {
-            disablePlayerButtons()
-            handler.postDelayed({ dealerPlayAfterSplit() }, 700)
-            return
-        }
-
-        if (hand2Cards.first().startsWith("A")) {
-            disablePlayerButtons()
-            handler.postDelayed({ dealerPlayAfterSplit() }, 700)
+        if (card.startsWith("A")) {
+            promptAceChoiceFor("hand2", card)
         }
     }
 
@@ -395,35 +408,42 @@ class GameBoardActivity : AppCompatActivity() {
 
         val card = deck.removeAt(0)
         playerCards.add(card)
+        Log.d("ACE_DEBUG", "HIT: drew $card into MAIN -> $playerCards")
 
-        // update logical score
-        playerScore = calculateBestScore(playerCards)
+        // Recompute using preference if set
+        playerScore = calculateBestScoreWithPreference(playerCards, mainPreferAceAsOne)
 
-        // add visual card
         addCardImageToLayout(card, binding.playerCards)
+
+        // If it's an Ace, prompt immediately
+        if (card.startsWith("A")) {
+            promptAceChoiceFor("main", card)
+        } else {
+            // update UI text if no ace prompt
+            updateScoreOnUI()
+        }
     }
 
     // -------------------- Stand (dealer sequence) --------------------
     private fun onStandClicked() {
-        // Normal game
         if (!isSplit) {
             dealerPlay()
             return
         }
 
-        // Split: move to second hand if on first
         if (isPlayingHand1) {
+            // Move to hand2
             isPlayingHand1 = false
             updateSplitHandHighLight()
             return
         }
 
-        // Already on hand2 → dealer plays
+        // Already on hand2 -> dealer plays after split
         disablePlayerButtons()
         handler.postDelayed({ dealerPlayAfterSplit() }, 600)
     }
 
-    // -------------------- Dealer after split flow --------------------
+    // Dealer flow for split
     private fun dealerPlayAfterSplit() {
         // Reveal hidden card
         dealerHiddenCardCode?.let { code ->
@@ -438,80 +458,98 @@ class GameBoardActivity : AppCompatActivity() {
 
         updateScoreOnUI()
 
-        handler.postDelayed({
-            drawDealerCardsSequentiallyAfterSplit()
-        }, 600)
+        handler.postDelayed({ drawDealerCardsSequentiallyAfterSplit() }, 600)
     }
 
     private fun drawDealerCardsSequentiallyAfterSplit() {
+
+        if(aceDialogInProgress){
+            handler.postDelayed({drawDealerCardsSequentiallyAfterSplit()}, 400)
+            return
+        }
+
+
         if (dealerScore >= 17) {
             handler.postDelayed({ evaluateSplitResults() }, 700)
             return
         }
 
-        if (deck.isEmpty()) { createDeck(); shuffleDeck() }
+        if (deck.isEmpty()) {
+            createDeck(); shuffleDeck()
+        }
 
         val card = deck.removeAt(0)
         dealerScore += getCardValue(card)
-        // soft Ace adjustment for dealer
         if (dealerScore > 21 && card.startsWith("A")) dealerScore -= 10
 
         addDealerCard(card, hidden = false)
         updateScoreOnUI()
-
         handler.postDelayed({ drawDealerCardsSequentiallyAfterSplit() }, 700)
     }
 
-    // -------------------- Split result & money --------------------
+    // -------------------- Split evaluation --------------------
     private fun evaluateSplitResults() {
-        // ensure up-to-date scores
-        hand1Score = calculateBestScore(hand1Cards)
-        hand2Score = calculateBestScore(hand2Cards)
+        // ensure up-to-date scores using preferences (if user made choices)
+        hand1Score = calculateBestScoreWithPreference(hand1Cards, hand1PreferAceAsOne)
+        hand2Score = calculateBestScoreWithPreference(hand2Cards, hand2PreferAceAsOne)
 
         val hand1Bust = hand1Score > 21
         val hand2Bust = hand2Score > 21
 
+        // total amount that was originally bet for this round (already deducted earlier)
+        val totalBet = if (isSplit) currentBet * 2 else currentBet
+
         var totalWin = 0
 
-        // If dealer busts: every non-busted hand wins
-        if (dealerScore > 21) {
-            if (!hand1Bust) totalWin += currentBet * 2
-            if (!hand2Bust) totalWin += currentBet * 2
-        } else {
-            // Evaluate each hand against dealer
-            totalWin += when {
-                hand1Bust -> -currentBet
-                hand1Score > dealerScore -> currentBet * 2
-                hand1Score < dealerScore -> -currentBet
-                else -> currentBet // push -> return bet
-            }
-
-            totalWin += when {
-                hand2Bust -> -currentBet
-                hand2Score > dealerScore -> currentBet * 2
-                hand2Score < dealerScore -> -currentBet
-                else -> currentBet // push -> return bet
-            }
+        // HAND 1: add whatever this hand should return (0 = lost, currentBet = push, currentBet*2 = win)
+        totalWin += when {
+            hand1Bust -> 0
+            dealerScore > 21 || hand1Score > dealerScore -> currentBet * 2 // win -> return bet + win
+            hand1Score < dealerScore -> 0 // loss -> nothing returned
+            else -> currentBet // push -> return bet only
         }
+
+        // HAND 2: same rules
+        totalWin += when {
+            hand2Bust -> 0
+            dealerScore > 21 || hand2Score > dealerScore -> currentBet * 2
+            hand2Score < dealerScore -> 0
+            else -> currentBet
+        }
+
+        // Debugging log so you can trace exact result in LogCat
+        Log.d(
+            "ACE_DEBUG",
+            "evaluateSplitResults(): hand1Score=$hand1Score hand2Score=$hand2Score dealerScore=$dealerScore " +
+                    "hand1Bust=$hand1Bust hand2Bust=$hand2Bust totalBet=$totalBet totalWin=$totalWin"
+        )
 
         // Apply money result
         playerMoney += totalWin
         binding.playerMoney.text = "Money: $$playerMoney"
 
-        // Choose overlay
+        // Decide which overlay to show:
+        // - If totalWin > totalBet -> player got back more than they staked (net win). Show Win overlay.
+        // - If totalWin == totalBet -> effectively push (got back exactly the stake). Show push overlay.
+        // - If totalWin == 0 -> lost all bets (show Lose overlay for totalBet).
         when {
-            totalWin > 0 -> {
+            totalWin > totalBet -> {
+                // Player received more than they staked -> show win with the returned amount
                 binding.winAmountText.text = "+$totalWin"
-                showWinOverlay()
+                showWinOverlay(totalWin)
             }
-            totalWin < 0 -> {
-                binding.loseAmountText.text = "$totalWin"
-                showLoseOverlay()
+            totalWin == totalBet -> {
+                // Everything returned equals stake -> treat as push
+                showBlackjackOverlay("push")
             }
-            else -> showBlackjackOverlay("push")
+            else -> {
+                // Player got nothing back -> lost entire stake (totalBet)
+                binding.loseAmountText.text = "-$totalBet"
+                showLoseOverlay(totalBet)
+            }
         }
 
-        // Reset split mode and UI
+        // Reset split state & UI back to normal
         isSplit = false
         isPlayingHand1 = true
 
@@ -521,28 +559,23 @@ class GameBoardActivity : AppCompatActivity() {
         binding.playerCards.removeAllViews()
         binding.playerScore.visibility = View.VISIBLE
 
-        // Rebuild player's visual hand from playerCards (so UI is consistent)
+        // Rebuild main player's visual hand (so UI is consistent)
         for (c in playerCards) addCardImageToLayout(c, binding.playerCards)
 
-        // Update all relevant UI
+        // Update UI numbers
         updateScoreOnUI()
         updateSplitScoresOnUi()
     }
 
-    private fun evaluateSingleHand(score: Int): Int {
-        return when {
-            score > 21 -> -1
-            dealerScore > 21 -> 1
-            score > dealerScore -> 1
-            score < dealerScore -> -1
-            else -> 0
-        }
-    }
-
     // -------------------- Dealer normal play --------------------
     private fun dealerPlay() {
+        if(aceDialogInProgress){
+            handler.postDelayed({dealerPlay()},400)
+            return
+        }
+
+
         handler.postDelayed({
-            // Flip hidden card and update dealer score
             dealerHiddenCardCode?.let { code ->
                 dealerHiddenImageView?.let { iv ->
                     val realRes = resources.getIdentifier(getCardDrawableName(code), "drawable", packageName)
@@ -552,23 +585,28 @@ class GameBoardActivity : AppCompatActivity() {
                     updateScoreOnUI()
                 }
             }
-
             dealerHiddenCardCode = null
             dealerHiddenImageView = null
 
-            handler.postDelayed({
-                drawDealerCardsSequentially()
-            }, 600)
+            handler.postDelayed({ drawDealerCardsSequentially() }, 600)
         }, 600)
     }
 
     private fun drawDealerCardsSequentially() {
+        if(aceDialogInProgress) {
+            handler.postDelayed({drawDealerCardsSequentially()}, 400)
+            return
+        }
+
+
         if (dealerScore >= 17) {
             handler.postDelayed({ checkRoundResult() }, 700)
             return
         }
 
-        if (deck.isEmpty()) { createDeck(); shuffleDeck() }
+        if (deck.isEmpty()) {
+            createDeck(); shuffleDeck()
+        }
 
         val card = deck.removeAt(0)
         dealerScore += getCardValue(card)
@@ -579,10 +617,15 @@ class GameBoardActivity : AppCompatActivity() {
         handler.postDelayed({ drawDealerCardsSequentially() }, 700)
     }
 
-    // -------------------- Check result & money --------------------
+    // -------------------- Round result --------------------
     private fun checkRoundResult() {
-        // update player's logical best score to be safe
-        playerScore = calculateBestScore(playerCards)
+
+        if(aceDialogInProgress) {
+            handler.postDelayed({checkRoundResult()},400)
+        }
+
+        // recalc final playerScore using preference
+        playerScore = calculateBestScoreWithPreference(playerCards, mainPreferAceAsOne)
 
         when {
             playerScore > 21 -> {
@@ -632,7 +675,7 @@ class GameBoardActivity : AppCompatActivity() {
             .show()
     }
 
-    // Win / Lose / Blackjack overlays (unchanged behavior)
+    // ---------- Overlays (win/lose/blackjack) ----------
     private fun showWinOverlay(amount: Int = currentBet) {
         val overlay = binding.winOverlay
         binding.winTotalMoney.text = "Money: $$playerMoney"
@@ -643,19 +686,14 @@ class GameBoardActivity : AppCompatActivity() {
         overlay.scaleY = 0.8f
 
         overlay.animate()
-            .alpha(1f)
-            .scaleX(1f)
-            .scaleY(1f)
+            .alpha(1f).scaleX(1f).scaleY(1f)
             .setDuration(400)
             .withEndAction {
                 handler.postDelayed({
-                    overlay.animate()
-                        .alpha(0f)
-                        .setDuration(400)
-                        .withEndAction {
-                            overlay.visibility = View.GONE
-                            askForBet()
-                        }.start()
+                    overlay.animate().alpha(0f).setDuration(400).withEndAction {
+                        overlay.visibility = View.GONE
+                        askForBet()
+                    }.start()
                 }, 700)
             }.start()
     }
@@ -670,19 +708,14 @@ class GameBoardActivity : AppCompatActivity() {
         overlay.scaleY = 0.8f
 
         overlay.animate()
-            .alpha(1f)
-            .scaleX(1f)
-            .scaleY(1f)
+            .alpha(1f).scaleX(1f).scaleY(1f)
             .setDuration(400)
             .withEndAction {
                 handler.postDelayed({
-                    overlay.animate()
-                        .alpha(0f)
-                        .setDuration(400)
-                        .withEndAction {
-                            overlay.visibility = View.GONE
-                            if (playerMoney < 10) startLooseActivity() else askForBet()
-                        }.start()
+                    overlay.animate().alpha(0f).setDuration(400).withEndAction {
+                        overlay.visibility = View.GONE
+                        if (playerMoney < 10) startLooseActivity() else askForBet()
+                    }.start()
                 }, 700)
             }.start()
     }
@@ -714,19 +747,14 @@ class GameBoardActivity : AppCompatActivity() {
         overlay.scaleY = 0.8f
 
         overlay.animate()
-            .alpha(1f)
-            .scaleX(1f)
-            .scaleY(1f)
+            .alpha(1f).scaleX(1f).scaleY(1f)
             .setDuration(400)
             .withEndAction {
                 handler.postDelayed({
-                    overlay.animate()
-                        .alpha(0f)
-                        .setDuration(400)
-                        .withEndAction {
-                            overlay.visibility = View.GONE
-                            askForBet()
-                        }.start()
+                    overlay.animate().alpha(0f).setDuration(400).withEndAction {
+                        overlay.visibility = View.GONE
+                        askForBet()
+                    }.start()
                 }, 900)
             }.start()
     }
@@ -740,8 +768,7 @@ class GameBoardActivity : AppCompatActivity() {
             .show()
     }
 
-    // -------------------- UI helpers --------------------
-
+    // ---------- UI helpers ----------
     private fun disablePlayerButtons() {
         binding.btnHit.isEnabled = false
         binding.btnStand.isEnabled = false
@@ -752,27 +779,20 @@ class GameBoardActivity : AppCompatActivity() {
         binding.btnStand.isEnabled = true
     }
 
-    /**
-     * Update the main player's displayed score.
-     * If an Ace exists in the current main hand (playerCards),
-     * we show the soft/hard format using formatAceScore(...) immediately.
-     */
     private fun updateScoreOnUI() {
         if (!isSplit) {
             binding.playerScore.visibility = View.VISIBLE
-            binding.playerScore.text = "Player: ${formatAceScore(playerCards)}"
+            binding.playerScore.text = "Player: ${formatAceScore(playerCards, mainPreferAceAsOne)}"
+            // numeric score using preference
+            playerScore = calculateBestScoreWithPreference(playerCards, mainPreferAceAsOne)
+
+            Log.d("ACE_DEBUG", "updateScoreOnUi: Player cards = $playerCards -> ${binding.playerScore.text}")
         } else {
             binding.playerScore.visibility = View.GONE
         }
-
-        // Dealer shows one value (we track dealerScore separately)
         binding.dealerScore.text = "Dealer: $dealerScore"
     }
 
-    /**
-     * Update the split hands' UI scores.
-     * Uses formatAceScore(...) so Ace soft/hard shows for each split hand immediately.
-     */
     private fun updateSplitScoresOnUi() {
         if (!isSplit) {
             binding.playerHand1Score.visibility = View.GONE
@@ -783,8 +803,14 @@ class GameBoardActivity : AppCompatActivity() {
         binding.playerHand1Score.visibility = View.VISIBLE
         binding.playerHand2Score.visibility = View.VISIBLE
 
-        binding.playerHand1Score.text = "Hand1: ${formatAceScore(hand1Cards)}"
-        binding.playerHand2Score.text = "Hand2: ${formatAceScore(hand2Cards)}"
+        binding.playerHand1Score.text = "Hand1: ${formatAceScore(hand1Cards, hand1PreferAceAsOne)}"
+        binding.playerHand2Score.text = "Hand2: ${formatAceScore(hand2Cards, hand2PreferAceAsOne)}"
+
+        // numeric recalc using preferences
+        hand1Score = calculateBestScoreWithPreference(hand1Cards, hand1PreferAceAsOne)
+        hand2Score = calculateBestScoreWithPreference(hand2Cards, hand2PreferAceAsOne)
+
+        Log.d("ACE_DEBUG", "updateSplitScores: hand1=$hand1Cards -> $hand1Score; hand2=$hand2Cards -> $hand2Score")
     }
 
     private fun updateSplitHandHighLight() {
@@ -797,7 +823,6 @@ class GameBoardActivity : AppCompatActivity() {
             binding.playerHand1.alpha = 0.4f
             binding.playerHand2.alpha = 1f
         }
-
         binding.playerScore.visibility = View.GONE
     }
 
@@ -810,12 +835,10 @@ class GameBoardActivity : AppCompatActivity() {
         val resName = if (hidden) "card_back" else getCardDrawableName(cardCode)
         val resId = resources.getIdentifier(resName, "drawable", packageName)
         iv.setImageResource(if (resId != 0) resId else R.drawable.card_back)
-
         iv.scaleType = ImageView.ScaleType.CENTER_INSIDE
         val lp = ViewGroup.MarginLayoutParams(dpToPx(72), dpToPx(100))
         lp.setMargins(8, 0, 8, 0)
         iv.layoutParams = lp
-
         binding.dealerCards.addView(iv)
         animateCardIn(iv)
     }
@@ -825,12 +848,10 @@ class GameBoardActivity : AppCompatActivity() {
         val name = getCardDrawableName(cardCode)
         val id = resources.getIdentifier(name, "drawable", packageName)
         iv.setImageResource(if (id != 0) id else R.drawable.card_back)
-
         iv.scaleType = ImageView.ScaleType.CENTER_INSIDE
         val lp = ViewGroup.MarginLayoutParams(dpToPx(72), dpToPx(100))
         lp.setMargins(8, 0, 8, 0)
         iv.layoutParams = lp
-
         container.addView(iv)
         animateCardIn(iv)
     }
@@ -900,77 +921,163 @@ class GameBoardActivity : AppCompatActivity() {
 
     /**
      * calculateBestScore(cards) returns the best (highest <=21) value for a hand.
-     * This is used for comparisons with the dealer etc.
      */
     private fun calculateBestScore(cards: List<String>): Int {
         if (cards.isEmpty()) return 0
-
         var total = 0
+        var aceCount = 0
+        for (c in cards) {
+            val rank = c.dropLast(1)
+            when (rank) {
+                "A" -> { total += 11; aceCount++ }
+                "K", "Q", "J" -> total += 10
+                else -> total += rank.toIntOrNull() ?: 0
+            }
+        }
+        while (total > 21 && aceCount > 0) {
+            total -= 10
+            aceCount--
+        }
+        return total
+    }
+
+    // calculate score applying a "prefer ace as 1 once" flag
+    private fun calculateBestScoreWithPreference(cards: List<String>, preferOneAceAsOne: Boolean): Int {
+        if (cards.isEmpty()) return 0
+        var total = 0
+        var aces = 0
+        for (c in cards) {
+            val rank = c.dropLast(1)
+            when (rank) {
+                "A" -> { total += 11; aces++ }
+                "K", "Q", "J" -> total += 10
+                else -> total += rank.toIntOrNull() ?: 0
+            }
+        }
+        if (preferOneAceAsOne && aces > 0) {
+            total -= 10
+        } else {
+            while (total > 21 && aces > 0) {
+                total -= 10
+                aces--
+            }
+        }
+        return total
+    }
+
+    // -------------------- Ace prompt + handling --------------------
+    /**
+     * Prompt the user to choose Ace = 1 or 11 for a given hand.
+     * handTag must be exactly one of: "main", "hand1", "hand2"
+     */
+    private fun promptAceChoiceFor(handTag: String, cardCode: String) {
+
+        Log.d("ACE_DEBUG", "promptAceChoiceFor() called for: $handTag card=$cardCode")
+
+        // If this ace already has a chosen value -> skip
+        manualAceValues[cardCode]?.let { saved ->
+            Log.d("ACE_DEBUG", "Ace $cardCode already chosen as $saved — skipping prompt")
+            recalcAndRefreshUi()
+            return
+        }
+
+        if (aceDialogInProgress) {
+            Log.d("ACE_DEBUG", "Dialog already up — ignore")
+            return
+        }
+
+        aceDialogInProgress = true
+        disablePlayerButtons()
+
+        AlertDialog.Builder(this)
+            .setTitle("Ace value")
+            .setMessage("Count this Ace as 1 or 11?")
+            .setPositiveButton("11") { dialog, _ ->
+
+                Log.d("ACE_DEBUG", "User chose ACE=11 for $handTag ($cardCode)")
+
+                manualAceValues[cardCode] = 11
+
+                when (handTag) {
+                    "main" -> mainPreferAceAsOne = false
+                    "hand1" -> hand1PreferAceAsOne = false
+                    "hand2" -> hand2PreferAceAsOne = false
+                }
+
+                recalcAndRefreshUi()
+                aceDialogInProgress = false
+                enablePlayerButtons()
+                dialog.dismiss()
+            }
+            .setNegativeButton("1") { dialog, _ ->
+
+                Log.d("ACE_DEBUG", "User chose ACE=1 for $handTag ($cardCode)")
+
+                manualAceValues[cardCode] = 1
+
+                when (handTag) {
+                    "main" -> mainPreferAceAsOne = true
+                    "hand1" -> hand1PreferAceAsOne = true
+                    "hand2" -> hand2PreferAceAsOne = true
+                }
+
+                recalcAndRefreshUi()
+                aceDialogInProgress = false
+                enablePlayerButtons()
+                dialog.dismiss()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    // Recalculate numeric scores using preferences and refresh UIs
+    private fun recalcAndRefreshUi() {
+        playerScore = calculateBestScoreWithPreference(playerCards, mainPreferAceAsOne)
+        hand1Score = calculateBestScoreWithPreference(hand1Cards, hand1PreferAceAsOne)
+        hand2Score = calculateBestScoreWithPreference(hand2Cards, hand2PreferAceAsOne)
+
+        updateScoreOnUI()
+        updateSplitScoresOnUi()
+    }
+
+
+    private fun formatAceScore(cards: List<String>, preferAceAsOne: Boolean = false): String {
+        if (cards.isEmpty()) return "0"
+
+        var softTotal = 0
         var aceCount = 0
 
         for (c in cards) {
             val rank = c.dropLast(1)
             when (rank) {
                 "A" -> {
-                    total += 11
+                    softTotal += 11
                     aceCount++
                 }
-                "K", "Q", "J" -> total += 10
-                else -> total += rank.toIntOrNull() ?: 0
+                "K", "Q", "J" -> softTotal += 10
+                else -> softTotal += rank.toIntOrNull() ?: 0
             }
         }
 
-        // reduce 10 for each ace while over 21
-        while (total > 21 && aceCount > 0) {
-            total -= 10
-            aceCount--
+        // If user explicitly prefers Ace as 1 -> always subtract 10 once
+        if (preferAceAsOne && aceCount > 0) {
+            val forced = softTotal - 10
+            return forced.toString()
         }
 
-        return total
-    }
-
-    /**
-     * formatAceScore(...) returns a string showing soft/hard values if Ace present,
-     * otherwise returns the single numeric value. Examples:
-     * - "15 (or 5)"
-     * - "13"
-     * - "31 (or 21)"
-     *
-     * This is used for UI display so player's score displays the Ace choice immediately.
-     */
-    private fun formatAceScore(cards: List<String>): String {
-        if (cards.isEmpty()) return "0"
-
-        var total = 0
-        var aces = 0
-
-        for (c in cards) {
-            val rank = c.dropLast(1)
-            when (rank) {
-                "A" -> {
-                    total += 11
-                    aces++
-                }
-                "K", "Q", "J" -> total += 10
-                else -> total += rank.toIntOrNull() ?: 0
-            }
+        // Normal soft/hard calculation
+        var altTotal = softTotal
+        var ac = aceCount
+        while (altTotal > 21 && ac > 0) {
+            altTotal -= 10
+            ac--
         }
 
-        val softValue = total
-        var hardValue = total
-        var remainingAces = aces
-
-        // convert aces one by one from 11->1 (subtract 10) until <=21 or no aces left
-        while (hardValue > 21 && remainingAces > 0) {
-            hardValue -= 10
-            remainingAces--
-        }
-
-        // If there's at least one Ace AND soft and hard differ, show both values
-        return if (aces > 0 && softValue != hardValue) {
-            "$softValue (or $hardValue)"
+        return if (aceCount > 0 && softTotal != altTotal) {
+            "$softTotal (or $altTotal)"
         } else {
-            "$hardValue"
+            "$altTotal"
         }
     }
+
 }
