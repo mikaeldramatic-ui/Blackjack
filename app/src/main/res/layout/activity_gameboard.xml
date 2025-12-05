@@ -8,6 +8,7 @@
     android:background="@drawable/game_board"
     tools:context=".GameBoardActivity">
 
+
     <!-- Quit Button -->
     <ImageButton
         android:id="@+id/btnQuit"
@@ -21,7 +22,8 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Dealer score -->
+
+    <!-- Dealer Score -->
     <TextView
         android:id="@+id/dealerScore"
         android:layout_width="wrap_content"
@@ -35,35 +37,36 @@
         app:layout_constraintTop_toBottomOf="@id/btnQuit"
         app:layout_constraintStart_toStartOf="parent"/>
 
-    <!-- Dealer cards -->
+
+    <!-- Dealer Cards -->
     <LinearLayout
         android:id="@+id/dealerCards"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:gravity="center"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:layout_marginTop="16dp"
+        android:orientation="horizontal"
+        android:layout_marginTop="10dp"
         app:layout_constraintTop_toBottomOf="@id/dealerScore"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Player Money -->
 
+    <!-- Player Money -->
     <TextView
         android:id="@+id/playerMoney"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Money : $200"
+        android:text="Money: $200"
         android:textColor="@android:color/white"
         android:textSize="22sp"
         android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/dealerScore"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="8dp"/>
+        android:layout_marginTop="6dp"
+        android:layout_marginStart="20dp"
+        app:layout_constraintTop_toBottomOf="@id/dealerCards"
+        app:layout_constraintStart_toStartOf="parent"/>
 
-    <!-- Player score -->
+
+    <!-- Player Score -->
     <TextView
         android:id="@+id/playerScore"
         android:layout_width="wrap_content"
@@ -72,12 +75,13 @@
         android:textColor="@android:color/white"
         android:textSize="22sp"
         android:textStyle="bold"
-        android:layout_marginTop="40dp"
-        app:layout_constraintTop_toBottomOf="@id/dealerCards"
+        android:layout_marginTop="20dp"
+        app:layout_constraintTop_toBottomOf="@id/playerMoney"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Player Cards -->
+
+    <!-- Player Main Hand (Default) -->
     <LinearLayout
         android:id="@+id/playerCards"
         android:layout_width="wrap_content"
@@ -89,18 +93,74 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Hit + Stand Buttons -->
+
+    <!-- Split Hand 1 -->
+    <LinearLayout
+        android:id="@+id/playerHand1"
+        android:layout_width="wrap_content"
+        android:layout_height="120dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:visibility="gone"
+        android:layout_marginTop="12dp"
+        app:layout_constraintTop_toBottomOf="@id/playerScore"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- Hand 1 Score -->
+    <TextView
+        android:id="@+id/playerHand1Score"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hand1: 0"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        android:visibility="gone"
+        android:layout_marginTop="4dp"
+        app:layout_constraintTop_toBottomOf="@id/playerHand1"
+        app:layout_constraintStart_toStartOf="parent"/>
+
+
+    <!-- Split Hand 2 -->
+    <LinearLayout
+        android:id="@+id/playerHand2"
+        android:layout_width="wrap_content"
+        android:layout_height="120dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:visibility="gone"
+        android:layout_marginTop="12dp"
+        app:layout_constraintTop_toBottomOf="@id/playerHand1Score"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- Hand 2 Score -->
+    <TextView
+        android:id="@+id/playerHand2Score"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hand2: 0"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        android:visibility="gone"
+        android:layout_marginTop="4dp"
+        app:layout_constraintTop_toBottomOf="@id/playerHand2"
+        app:layout_constraintStart_toStartOf="parent"/>
+
+
+    <!-- Action Buttons Row -->
     <LinearLayout
         android:id="@+id/actionRow"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:gravity="center"
+        android:orientation="horizontal"
         android:layout_marginBottom="40dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+        <!-- HIT -->
         <Button
             android:id="@+id/btnHit"
             android:layout_width="120dp"
@@ -111,6 +171,7 @@
             android:background="@drawable/neon_button_green_selector"
             android:layout_marginEnd="16dp"/>
 
+        <!-- STAND -->
         <Button
             android:id="@+id/btnStand"
             android:layout_width="120dp"
@@ -119,61 +180,146 @@
             android:textColor="@android:color/white"
             android:textSize="18sp"
             android:background="@drawable/neon_button_red_selector"
-            android:layout_marginStart="16dp"/>
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"/>
+
+        <!-- SPLIT -->
+        <Button
+            android:id="@+id/btnSplit"
+            android:layout_width="120dp"
+            android:layout_height="50dp"
+            android:text="Split"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:background="@drawable/neon_button_green_selector"
+            android:visibility="gone"/>
     </LinearLayout>
 
+
     <!-- Blackjack Overlay -->
-    <TextView
+    <FrameLayout
         android:id="@+id/blackjackOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center"
-        android:text="BLACKJACK!"
-        android:textColor="@android:color/holo_orange_light"
-        android:textSize="55sp"
-        android:textStyle="italic"
-        android:background="#AA000000"
         android:visibility="gone"
         android:alpha="0"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        android:background="#AA000000">
+
+        <TextView
+            android:id="@+id/blackjackTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BLACKJACK!"
+            android:textColor="@android:color/holo_orange_light"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            android:layout_gravity="center"/>
+
+        <TextView
+            android:id="@+id/blackjackAmount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+0"
+            android:textColor="@android:color/holo_orange_light"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="120dp"/>
+
+        <TextView
+            android:id="@+id/blackjackTotal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Money: $0"
+            android:textColor="@android:color/white"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="40dp"/>
+    </FrameLayout>
+
 
     <!-- Win Overlay -->
-    <TextView
+    <FrameLayout
         android:id="@+id/winOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center"
-        android:text="YOU WIN!!"
-        android:textColor="@android:color/holo_green_light"
-        android:textSize="48sp"
-        android:textStyle="bold"
-        android:background="#AA000000"
         android:visibility="gone"
         android:alpha="0"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        android:background="#AA000000">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="YOU WIN!!"
+            android:textColor="@android:color/holo_green_light"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            android:layout_gravity="center"/>
+
+        <TextView
+            android:id="@+id/winAmountText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+0"
+            android:textColor="@android:color/holo_green_light"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="120dp"/>
+
+        <TextView
+            android:id="@+id/winTotalMoney"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Money: $0"
+            android:textColor="@android:color/holo_green_light"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="40dp"/>
+    </FrameLayout>
+
 
     <!-- Lose Overlay -->
-    <TextView
+    <FrameLayout
         android:id="@+id/loseOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center"
-        android:text="YOU LOST!"
-        android:textColor="@android:color/holo_red_light"
-        android:textSize="48sp"
-        android:textStyle="bold"
-        android:background="#AA000000"
         android:visibility="gone"
         android:alpha="0"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        android:background="#AA000000">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="YOU LOST!"
+            android:textColor="@android:color/holo_red_light"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            android:layout_gravity="center"/>
+
+        <TextView
+            android:id="@+id/loseAmountText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-0"
+            android:textColor="@android:color/holo_red_light"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="120dp"/>
+
+        <TextView
+            android:id="@+id/loseTotalMoney"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Money: $0"
+            android:textColor="@android:color/holo_red_light"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="40dp"/>
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
