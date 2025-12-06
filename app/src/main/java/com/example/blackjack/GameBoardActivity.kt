@@ -15,6 +15,11 @@ import kotlin.random.Random
 
 class GameBoardActivity : AppCompatActivity() {
 
+    //Multiplayer
+    private var playerCount = 1
+    private var players = mutableListOf<Player>()
+    private var currentPlayerIndex =0
+
     private lateinit var binding: ActivityGameboardBinding
 
     // Split mode flags
@@ -30,8 +35,6 @@ class GameBoardActivity : AppCompatActivity() {
     private var hand1Cards = mutableListOf<String>()
     private var hand2Cards = mutableListOf<String>()
 
-    // Money
-    private var playerMoney = 200
     private var currentBet = 0
 
     // Game variables
@@ -59,10 +62,16 @@ class GameBoardActivity : AppCompatActivity() {
         binding = ActivityGameboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        //Multiplayer
+        playerCount = intent.getIntExtra("playerCount", 1)
+        createPlayers()
+
+        updatePlayerHeader()
+
         // UI default text
         binding.playerScore.text = "Player: 0"
         binding.dealerScore.text = "Dealer: 0"
-        binding.playerMoney.text = "Money: $$playerMoney"
+
 
         // Button listeners
         binding.btnHit.setOnClickListener { onHitClicked() }
@@ -78,9 +87,44 @@ class GameBoardActivity : AppCompatActivity() {
         askForBet()
     }
 
+    //----------------Create Players--------------------
+
+    private fun createPlayers() {
+        players.clear()
+
+        for (i in 1..playerCount) {
+            val randomName = generateRandomName()
+            players.add(Player(id= i, name= randomName))
+        }
+        currentPlayerIndex = 0
+    }
+
+    //-------Multiplayer helpers----------------------
+
+    private fun currentPlayer() : Player= players[currentPlayerIndex]
+
+    private fun updatePlayerHeader() {
+        val p = currentPlayer()
+        binding.playerMoney.text = "${p.name} – $${p.money}"
+    }
+    private fun advanceToNextPlayer() {
+        currentPlayerIndex = (currentPlayerIndex + 1) % playerCount
+
+        //------Reset UI
+        binding.playerCards.removeAllViews()
+        binding.dealerCards.removeAllViews()
+        binding.playerScore.text = "Player: 0"
+        binding.dealerScore.text = "Dealer: 0"
+
+        updatePlayerHeader()
+        askForBet()
+    }
+
+
+
     // -------------------- Betting --------------------
     private fun askForBet() {
-        if (playerMoney < 10) {
+        if (currentPlayer().money < 10) {
             showNoMoneyDialog()
             return
         }
@@ -88,18 +132,18 @@ class GameBoardActivity : AppCompatActivity() {
         val bets = arrayOf("10", "20", "50", "100", "Fold")
 
         AlertDialog.Builder(this)
-            .setTitle("Place Your Bet")
+            .setTitle("${currentPlayer().name} – Place Your Bet")
             .setItems(bets) { _, which ->
                 if (bets[which] == "Fold") {
                     finish()
                     return@setItems
                 }
                 currentBet = bets[which].toInt()
-                if (currentBet > playerMoney) currentBet = 10
+                if (currentBet > currentPlayer().money) currentBet = 10
 
                 // Deduct the player's bet now (split will deduct again if used)
-                playerMoney -= currentBet
-                binding.playerMoney.text = "Money: $$playerMoney"
+                currentPlayer().money -= currentBet
+               updatePlayerHeader()
 
                 dealInitialCards()
             }
@@ -265,13 +309,13 @@ class GameBoardActivity : AppCompatActivity() {
             "push" -> showBlackjackOverlay("push")
             "player" -> {
                 val amount = (currentBet * 2.5).toInt()
-                playerMoney += amount
-                binding.playerMoney.text = "Money: $$playerMoney"
+                currentPlayer().money += amount
+                binding.playerMoney.text = "${currentPlayer().name} – $${currentPlayer().money}"
                 showBlackjackOverlay("player", amount)
             }
             "dealer" -> {
                 // player already paid bet — show overlay
-                binding.playerMoney.text = "Money: $$playerMoney"
+                binding.playerMoney.text = "${currentPlayer().name} – $${currentPlayer().money}"
                 showBlackjackOverlay("dealer")
             }
         }
@@ -331,8 +375,8 @@ class GameBoardActivity : AppCompatActivity() {
         isPlayingHand1 = true
 
         // Deduct bet for second hand
-        playerMoney -= currentBet
-        binding.playerMoney.text = "Money: $$playerMoney"
+        currentPlayer().money -= currentBet
+        binding.playerMoney.text = "${currentPlayer().name} – $${currentPlayer().money}"
 
         // Show split UI
         binding.playerCards.visibility = View.GONE
@@ -525,8 +569,8 @@ class GameBoardActivity : AppCompatActivity() {
         )
 
         // Apply money result
-        playerMoney += totalWin
-        binding.playerMoney.text = "Money: $$playerMoney"
+        currentPlayer().money += totalWin
+        binding.playerMoney.text = "${currentPlayer().name} – $${currentPlayer().money}"
 
         // Decide which overlay to show:
         // - If totalWin > totalBet -> player got back more than they staked (net win). Show Win overlay.
@@ -629,34 +673,34 @@ class GameBoardActivity : AppCompatActivity() {
 
         when {
             playerScore > 21 -> {
-                binding.playerMoney.text = "Money: $$playerMoney"
+                binding.playerMoney.text = "${currentPlayer().name} – $${currentPlayer().money}"
                 showLoseOverlay(currentBet)
             }
             dealerScore > 21 || playerScore > dealerScore -> {
                 val payout = currentBet * 2
-                playerMoney += payout
-                binding.playerMoney.text = "Money: $$playerMoney"
+                currentPlayer().money += payout
+                binding.playerMoney.text = "${currentPlayer().name} – $${currentPlayer().money}"
                 showWinOverlay(payout)
             }
             dealerScore == playerScore -> {
-                playerMoney += currentBet
-                binding.playerMoney.text = "Money: $$playerMoney"
+                currentPlayer().money += currentBet
+                binding.playerMoney.text = "${currentPlayer().name} – $${currentPlayer().money}"
                 showBlackjackOverlay("push")
             }
             else -> {
-                binding.playerMoney.text = "Money: $$playerMoney"
+                binding.playerMoney.text = "${currentPlayer().name} – $${currentPlayer().money}"
                 showLoseOverlay(currentBet)
             }
         }
     }
 
     private fun goToWin() {
-        binding.playerMoney.text = "Money: $$playerMoney"
+        binding.playerMoney.text = "${currentPlayer().name} – $${currentPlayer().money}"
         startWinsActivity()
     }
 
     private fun goToLose() {
-        binding.playerMoney.text = "Money: $$playerMoney"
+        binding.playerMoney.text = "${currentPlayer().name} – $${currentPlayer().money}"
         startLooseActivity()
     }
 
@@ -678,7 +722,7 @@ class GameBoardActivity : AppCompatActivity() {
     // ---------- Overlays (win/lose/blackjack) ----------
     private fun showWinOverlay(amount: Int = currentBet) {
         val overlay = binding.winOverlay
-        binding.winTotalMoney.text = "Money: $$playerMoney"
+        binding.winTotalMoney.text = "${currentPlayer().name} – $${currentPlayer().money}"
         binding.winAmountText.text = "+$amount"
         overlay.visibility = View.VISIBLE
         overlay.alpha = 0f
@@ -700,7 +744,7 @@ class GameBoardActivity : AppCompatActivity() {
 
     private fun showLoseOverlay(amount: Int = currentBet) {
         val overlay = binding.loseOverlay
-        binding.loseTotalMoney.text = "Money: $$playerMoney"
+        binding.loseTotalMoney.text = "${currentPlayer().name} – $${currentPlayer().money}"
         binding.loseAmountText.text = "-$amount"
         overlay.visibility = View.VISIBLE
         overlay.alpha = 0f
@@ -714,7 +758,7 @@ class GameBoardActivity : AppCompatActivity() {
                 handler.postDelayed({
                     overlay.animate().alpha(0f).setDuration(400).withEndAction {
                         overlay.visibility = View.GONE
-                        if (playerMoney < 10) startLooseActivity() else askForBet()
+                        if (currentPlayer().money < 10) startLooseActivity() else askForBet()
                     }.start()
                 }, 700)
             }.start()
@@ -727,17 +771,17 @@ class GameBoardActivity : AppCompatActivity() {
             "player" -> {
                 binding.blackjackTitle.text = "BLACKJACK!"
                 binding.blackjackAmount.text = "+$winAmount"
-                binding.blackjackTotal.text = "Money: $$playerMoney"
+                binding.blackjackTotal.text = "${currentPlayer().name} – $${currentPlayer().money}"
             }
             "dealer" -> {
                 binding.blackjackTitle.text = "DEALER BLACKJACK"
                 binding.blackjackAmount.text = "-$currentBet"
-                binding.blackjackTotal.text = "Money: $$playerMoney"
+                binding.blackjackTotal.text = "${currentPlayer().name} – $${currentPlayer().money}"
             }
             "push" -> {
                 binding.blackjackTitle.text = "PUSH"
                 binding.blackjackAmount.text = "+0"
-                binding.blackjackTotal.text = "Money: $$playerMoney"
+                binding.blackjackTotal.text = "${currentPlayer().name} – $${currentPlayer().money}"
             }
         }
 
@@ -1078,6 +1122,33 @@ class GameBoardActivity : AppCompatActivity() {
         } else {
             "$altTotal"
         }
+    }
+
+    private fun generateRandomName(): String {
+        val names = listOf(
+            "Alex",
+            "Blake",
+            "Charlie",
+            "Dakota",
+            "Eden",
+            "Finn",
+            "Harper",
+            "Indigo",
+            "Jordan",
+            "Kai",
+            "Luca",
+            "Milan",
+            "Nova",
+            "Phoenix",
+            "Quinn",
+            "Riley",
+            "Sky",
+            "Tatum",
+            "Winter",
+            "Zion"
+        )
+
+        return names.random()
     }
 
 }
