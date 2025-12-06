@@ -108,7 +108,7 @@ class GameBoardActivity : AppCompatActivity() {
         binding.playerMoney.text = "${p.name} – $${p.money}"
     }
     private fun advanceToNextPlayer() {
-        currentPlayerIndex = (currentPlayerIndex + 1) % playerCount
+        currentPlayerIndex = (currentPlayerIndex + 1) % players.size
 
         //------Reset UI
         binding.playerCards.removeAllViews()
@@ -135,7 +135,7 @@ class GameBoardActivity : AppCompatActivity() {
             .setTitle("${currentPlayer().name} – Place Your Bet")
             .setItems(bets) { _, which ->
                 if (bets[which] == "Fold") {
-                    finish()
+                    advanceToNextPlayer()
                     return@setItems
                 }
                 currentBet = bets[which].toInt()
@@ -736,7 +736,12 @@ class GameBoardActivity : AppCompatActivity() {
                 handler.postDelayed({
                     overlay.animate().alpha(0f).setDuration(400).withEndAction {
                         overlay.visibility = View.GONE
-                        askForBet()
+
+                        if (currentPlayer().money < 10) {
+                            showEliminatedOverlay(currentPlayer().name)
+                        } else {
+                            advanceToNextPlayer()
+                        }
                     }.start()
                 }, 700)
             }.start()
@@ -758,7 +763,60 @@ class GameBoardActivity : AppCompatActivity() {
                 handler.postDelayed({
                     overlay.animate().alpha(0f).setDuration(400).withEndAction {
                         overlay.visibility = View.GONE
-                        if (currentPlayer().money < 10) startLooseActivity() else askForBet()
+
+                        if (currentPlayer().money < 10) {
+                            showEliminatedOverlay(currentPlayer().name)
+                        } else {
+                            advanceToNextPlayer()
+                        }
+                    }.start()
+                }, 700)
+            }.start()
+    }
+
+    private fun showEliminatedOverlay(playerName: String) {
+        val overlay = binding.loseOverlay
+        binding.loseTitle.text = "$playerName IS OUT!"
+        binding.loseAmountText.text = ""
+        binding.loseTotalMoney.text = "Money: $0"
+
+        overlay.visibility = View.VISIBLE
+        overlay.alpha = 0f
+        overlay.scaleX = 0.8f
+        overlay.scaleY = 0.8f
+
+        overlay.animate()
+            .alpha(1f).scaleX(1f).scaleY(1f)
+            .setDuration(400)
+            .withEndAction {
+                handler.postDelayed({
+                    overlay.animate().alpha(0f).setDuration(400).withEndAction {
+                        overlay.visibility = View.GONE
+
+                        if (currentPlayer().money < 10) {
+                            showEliminatedOverlay(currentPlayer().name)
+                        } else {
+                            advanceToNextPlayer()
+                        }
+
+                        // Remove player
+                        players.removeAt(currentPlayerIndex)
+
+                        // If no players left → end game
+                        if (players.isEmpty()) {
+                            finish()
+                            return@withEndAction
+                        }
+
+                        // Fix index if needed
+                        if (currentPlayerIndex >= players.size) {
+                            currentPlayerIndex = 0
+                        }
+
+                        // Go to next player's turn
+                        updatePlayerHeader()
+                        askForBet()
+
                     }.start()
                 }, 700)
             }.start()
@@ -773,11 +831,13 @@ class GameBoardActivity : AppCompatActivity() {
                 binding.blackjackAmount.text = "+$winAmount"
                 binding.blackjackTotal.text = "${currentPlayer().name} – $${currentPlayer().money}"
             }
+
             "dealer" -> {
                 binding.blackjackTitle.text = "DEALER BLACKJACK"
                 binding.blackjackAmount.text = "-$currentBet"
                 binding.blackjackTotal.text = "${currentPlayer().name} – $${currentPlayer().money}"
             }
+
             "push" -> {
                 binding.blackjackTitle.text = "PUSH"
                 binding.blackjackAmount.text = "+0"
@@ -797,11 +857,13 @@ class GameBoardActivity : AppCompatActivity() {
                 handler.postDelayed({
                     overlay.animate().alpha(0f).setDuration(400).withEndAction {
                         overlay.visibility = View.GONE
-                        askForBet()
+                        advanceToNextPlayer()
                     }.start()
                 }, 900)
             }.start()
     }
+
+
 
     private fun showNoMoneyDialog() {
         AlertDialog.Builder(this)
