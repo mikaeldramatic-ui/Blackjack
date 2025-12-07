@@ -1,5 +1,5 @@
 package com.example.blackjack
 
-interface AceCallBack {
-    fun onAceChosen(handTag: GameEngine.HandTag, card: String, value: Int)
+interface AceCallback {
+    fun onAceChosen(handTag: GameEngine.HandTag, card: Card, value: Int)
 }
