@@ -8,7 +8,6 @@
     android:background="@drawable/game_board"
     tools:context=".GameBoardActivity">
 
-
     <!-- Quit Button -->
     <ImageButton
         android:id="@+id/btnQuit"
@@ -22,6 +21,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
+    <!-- ===================== DEALER ===================== -->
 
     <!-- Dealer Score -->
     <TextView
@@ -37,8 +37,7 @@
         app:layout_constraintTop_toBottomOf="@id/btnQuit"
         app:layout_constraintStart_toStartOf="parent"/>
 
-
-    <!-- Dealer Cards -->
+    <!-- Dealer Cards (visible + hidden card_back added dynamically) -->
     <LinearLayout
         android:id="@+id/dealerCards"
         android:layout_width="match_parent"
@@ -50,8 +49,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
+    <!-- ===================== PLAYER MONEY & MAIN SCORE ===================== -->
 
-    <!-- Player Money -->
     <TextView
         android:id="@+id/playerMoney"
         android:layout_width="wrap_content"
@@ -65,8 +64,6 @@
         app:layout_constraintTop_toBottomOf="@id/dealerCards"
         app:layout_constraintStart_toStartOf="parent"/>
 
-
-    <!-- Player Score -->
     <TextView
         android:id="@+id/playerScore"
         android:layout_width="wrap_content"
@@ -80,8 +77,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
+    <!-- ===================== MAIN HAND ===================== -->
 
-    <!-- Player Main Hand (Default) -->
     <LinearLayout
         android:id="@+id/playerCards"
         android:layout_width="wrap_content"
@@ -93,8 +90,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
+    <!-- ===================== SPLIT HAND 1 ===================== -->
 
-    <!-- Split Hand 1 -->
     <LinearLayout
         android:id="@+id/playerHand1"
         android:layout_width="wrap_content"
@@ -103,11 +100,10 @@
         android:gravity="center"
         android:visibility="gone"
         android:layout_marginTop="12dp"
-        app:layout_constraintTop_toBottomOf="@id/playerScore"
+        app:layout_constraintTop_toBottomOf="@id/playerCards"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Hand 1 Score -->
     <TextView
         android:id="@+id/playerHand1Score"
         android:layout_width="wrap_content"
@@ -120,8 +116,8 @@
         app:layout_constraintTop_toBottomOf="@id/playerHand1"
         app:layout_constraintStart_toStartOf="parent"/>
 
+    <!-- ===================== SPLIT HAND 2 ===================== -->
 
-    <!-- Split Hand 2 -->
     <LinearLayout
         android:id="@+id/playerHand2"
         android:layout_width="wrap_content"
@@ -134,7 +130,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Hand 2 Score -->
     <TextView
         android:id="@+id/playerHand2Score"
         android:layout_width="wrap_content"
@@ -147,8 +142,8 @@
         app:layout_constraintTop_toBottomOf="@id/playerHand2"
         app:layout_constraintStart_toStartOf="parent"/>
 
+    <!-- ===================== ACTION BUTTONS ===================== -->
 
-    <!-- Action Buttons Row -->
     <LinearLayout
         android:id="@+id/actionRow"
         android:layout_width="wrap_content"
@@ -160,7 +155,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- HIT -->
         <Button
             android:id="@+id/btnHit"
             android:layout_width="120dp"
@@ -171,7 +165,6 @@
             android:background="@drawable/neon_button_green_selector"
             android:layout_marginEnd="16dp"/>
 
-        <!-- STAND -->
         <Button
             android:id="@+id/btnStand"
             android:layout_width="120dp"
@@ -183,63 +176,19 @@
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"/>
 
-        <!-- SPLIT -->
         <Button
             android:id="@+id/btnSplit"
             android:layout_width="120dp"
             android:layout_height="50dp"
-            android:text="Split"
+            android:text="SPLIT"
             android:textColor="@android:color/white"
             android:textSize="18sp"
             android:background="@drawable/neon_button_green_selector"
             android:visibility="gone"/>
     </LinearLayout>
 
+    <!-- ===================== WIN OVERLAY ===================== -->
 
-    <!-- Blackjack Overlay -->
-    <FrameLayout
-        android:id="@+id/blackjackOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone"
-        android:alpha="0"
-        android:background="#AA000000">
-
-        <TextView
-            android:id="@+id/blackjackTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="BLACKJACK!"
-            android:textColor="@android:color/holo_orange_light"
-            android:textSize="48sp"
-            android:textStyle="bold"
-            android:layout_gravity="center"/>
-
-        <TextView
-            android:id="@+id/blackjackAmount"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="+0"
-            android:textColor="@android:color/holo_orange_light"
-            android:textSize="32sp"
-            android:textStyle="bold"
-            android:layout_gravity="center_horizontal|bottom"
-            android:layout_marginBottom="120dp"/>
-
-        <TextView
-            android:id="@+id/blackjackTotal"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Money: $0"
-            android:textColor="@android:color/white"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:layout_gravity="center_horizontal|bottom"
-            android:layout_marginBottom="40dp"/>
-    </FrameLayout>
-
-
-    <!-- Win Overlay -->
     <FrameLayout
         android:id="@+id/winOverlay"
         android:layout_width="match_parent"
@@ -251,7 +200,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="YOU WIN!!"
+            android:text="YOU WIN!"
             android:textColor="@android:color/holo_green_light"
             android:textSize="48sp"
             android:textStyle="bold"
@@ -273,15 +222,15 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Money: $0"
-            android:textColor="@android:color/holo_green_light"
+            android:textColor="@android:color/white"
             android:textSize="24sp"
             android:textStyle="bold"
             android:layout_gravity="center_horizontal|bottom"
             android:layout_marginBottom="40dp"/>
     </FrameLayout>
 
+    <!-- ===================== LOSE OVERLAY ===================== -->
 
-    <!-- Lose Overlay -->
     <FrameLayout
         android:id="@+id/loseOverlay"
         android:layout_width="match_parent"
@@ -315,11 +264,87 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Money: $0"
-            android:textColor="@android:color/holo_red_light"
+            android:textColor="@android:color/white"
             android:textSize="24sp"
             android:textStyle="bold"
             android:layout_gravity="center_horizontal|bottom"
             android:layout_marginBottom="40dp"/>
     </FrameLayout>
+
+    <!-- ===================== PUSH OVERLAY ===================== -->
+
+    <FrameLayout
+        android:id="@+id/pushOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:alpha="0"
+        android:background="#AA000000">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="PUSH"
+            android:textColor="@android:color/holo_blue_light"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            android:layout_gravity="center"/>
+
+        <TextView
+            android:id="@+id/pushTotalMoney"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Money: $0"
+            android:textColor="@android:color/white"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="40dp"/>
+    </FrameLayout>
+
+    <!-- ===================== BLACKJACK OVERLAY ===================== -->
+
+    <FrameLayout
+        android:id="@+id/blackjackOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:alpha="0"
+        android:background="#AA000000">
+
+        <TextView
+            android:id="@+id/blackjackTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BLACKJACK!"
+            android:textColor="@android:color/holo_orange_light"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            android:layout_gravity="center"/>
+
+        <TextView
+            android:id="@+id/blackjackAmountText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+0"
+            android:textColor="@android:color/holo_orange_light"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="120dp"/>
+
+        <TextView
+            android:id="@+id/blackjackTotalMoney"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Money: $0"
+            android:textColor="@android:color/white"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="40dp"/>
+    </FrameLayout>
+
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

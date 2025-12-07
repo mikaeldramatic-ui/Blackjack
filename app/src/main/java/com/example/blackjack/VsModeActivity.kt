@@ -1,4 +1,5 @@
 package com.example.blackjack
+import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.example.blackjack.databinding.ActivityVsModeBinding
@@ -35,6 +36,13 @@ class VsModeActivity : AppCompatActivity() {
         //Back Button
         binding.btnBackVsMode.setOnClickListener {
             finish()
+        }
+
+        //Start button -> open up GameBoardActivity
+        binding.btnStartVs.setOnClickListener {
+            val i = Intent(this, GameBoardActivity::class.java)
+            i.putExtra("playerCount", playerCount)
+            startActivity(i)
         }
 
 
